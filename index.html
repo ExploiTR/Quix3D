@@ -4,52 +4,153 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quix 3D</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;700&display=swap" rel="stylesheet">
     <style>
-        body {
+        body, html {
             margin: 0;
             padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Montserrat', sans-serif;
+        }
+        #stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #FF8C00, #FFA500);
+        }
+        .content {
+            position: relative;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(135deg, #FF8C00, #FFA500);
-            font-family: Arial, sans-serif;
         }
         .container {
             text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
         }
         h1 {
-            font-size: 4rem;
+            font-size: 4.5rem;
             color: white;
             margin-bottom: 0.5rem;
+            letter-spacing: 2px;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
         }
         p {
             font-size: 1.5rem;
             color: white;
             margin-bottom: 2rem;
+            font-weight: 300;
+            letter-spacing: 1px;
         }
         .button {
             display: inline-block;
             padding: 15px 30px;
-            background-color: white;
-            color: #FF8C00;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
             text-decoration: none;
-            border-radius: 25px;
+            border-radius: 50px;
             font-size: 1.2rem;
-            font-weight: bold;
-            transition: background-color 0.3s, color 0.3s;
+            font-weight: 300;
+            transition: all 0.3s ease;
+            border: 2px solid white;
         }
         .button:hover {
-            background-color: #FF8C00;
-            color: white;
+            background-color: white;
+            color: #FF8C00;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+        .floating {
+            animation: float 6s ease-in-out infinite;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Quix 3D</h1>
-        <p>Affordable & Fast Prototyping</p>
-        <a href="mailto:quix3d@outlook.com?subject=Quote%20Request" class="button">Get a Quote</a>
+    <canvas id="stars"></canvas>
+    <div class="content">
+        <div class="container floating">
+            <h1>Quix 3D</h1>
+            <p>Affordable & Fast Prototyping</p>
+            <a href="mailto:quix3d@outlook.com?subject=Quote%20Request" class="button">Get a Quote</a>
+        </div>
     </div>
+
+    <script>
+        const canvas = document.getElementById('stars');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height, stars;
+        let mouseX = 0, mouseY = 0;
+
+        function init() {
+            resize();
+            animate();
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            stars = [];
+            for (let i = 0; i < 200; i++) {
+                stars.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    radius: Math.random() * 1.5,
+                    vx: Math.floor(Math.random() * 50) - 25,
+                    vy: Math.floor(Math.random() * 50) - 25
+                });
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.globalCompositeOperation = 'lighter';
+            for (let i = 0, x = stars.length; i < x; i++) {
+                let s = stars[i];
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.radius, 0, 2 * Math.PI);
+                ctx.fill();
+                s.x += s.vx / 30;
+                s.y += s.vy / 30;
+                if (s.x < 0 || s.x > width) s.vx = -s.vx;
+                if (s.y < 0 || s.y > height) s.vy = -s.vy;
+            }
+            ctx.fill();
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', function(e) {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            for (let i = 0, x = stars.length; i < x; i++) {
+                let s = stars[i];
+                let dx = s.x - mouseX;
+                let dy = s.y - mouseY;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 150) {
+                    s.x += dx / 10;
+                    s.y += dy / 10;
+                }
+            }
+        });
+
+        init();
+    </script>
 </body>
 </html>
