@@ -12,9 +12,9 @@
             height: 100%;
             overflow: hidden;
             font-family: 'Product Sans', sans-serif;
-            background-color: black;
+            background-color: #1a1a2e;
         }
-        #stars {
+        #printer {
             position: absolute;
             top: 0;
             left: 0;
@@ -30,130 +30,95 @@
         }
         .container {
             text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
         }
         h1 {
             font-size: 4.5rem;
-            color: white;
+            color: #00ffff;
             margin-bottom: 0.5rem;
             letter-spacing: -1px;
+            text-shadow: 0 0 10px #00ffff;
         }
         p {
             font-size: 1.5rem;
-            background: linear-gradient(45deg, #FF4081, #FF1744);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #ffffff;
             margin-bottom: 2rem;
         }
         .button {
             display: inline-block;
             padding: 15px 30px;
-            background: linear-gradient(45deg, #FF4081, #FF1744);
-            color: white;
+            background: #00ffff;
+            color: #1a1a2e;
             text-decoration: none;
             border-radius: 50px;
             font-size: 1.2rem;
             transition: all 0.3s ease;
+            font-weight: bold;
         }
         .button:hover {
             transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(255, 64, 129, 0.3);
+            box-shadow: 0 10px 20px rgba(0, 255, 255, 0.3);
         }
     </style>
 </head>
 <body>
-    <canvas id="stars"></canvas>
+    <canvas id="printer"></canvas>
     <div class="content">
         <div class="container">
             <h1>Quix 3D</h1>
-            <p>Affordable & Fast PLA/PETG Prototyping</p>
-            <a href="mailto:quix3d@outlook.com?subject=Can%20you%20print%20this%20for%20me%3F&body=[Attach%20your%20STL%20file]%0D%0AHi%2C%20Can%20you%20please%20estimate%20the%20attached%20STL%20for%20me%3F" class="button">Get a Quote</a>
+            <p>Affordable & Fast Prototyping</p>
+            <a href="mailto:quix3d@outlook.com?subject=Can%20you%20print%20this%20for%20me%3F&body=[Attach%20your%20STL%20file]%0D%0AHi%2C%20Can%20you%20please%20estimate%20the%20attached%20STL%20for%20me%3F%5C" class="button">Get a Quote</a>
         </div>
     </div>
 
     <script>
-        const canvas = document.getElementById('stars');
+        const canvas = document.getElementById('printer');
         const ctx = canvas.getContext('2d');
         
-        let width, height, stars;
-        let mouseX = 0, mouseY = 0;
-
+        let width, height;
+        let layers = [];
+        
         function init() {
             resize();
             animate();
         }
-
+        
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-            stars = [];
-            for (let i = 0; i < 100; i++) {
-                stars.push({
-                    x: Math.random() * width,
-                    y: Math.random() * height,
-                    radius: Math.random() * 1 + 1,
-                    vx: Math.random() * 0.5 - 0.25,
-                    vy: Math.random() * 0.5 - 0.25
+            layers = [];
+            for (let i = 0; i < 50; i++) {
+                layers.push({
+                    y: height + i * 10,
+                    width: Math.random() * width * 0.8 + width * 0.1,
+                    speed: Math.random() * 0.5 + 0.5
                 });
             }
         }
-
+        
         function animate() {
             ctx.clearRect(0, 0, width, height);
-            ctx.globalCompositeOperation = 'lighter';
-
-            for (let i = 0; i < stars.length; i++) {
-                let s = stars[i];
-                
-                s.x += s.vx;
-                s.y += s.vy;
-                
-                if (s.x < 0 || s.x > width) s.vx = -s.vx;
-                if (s.y < 0 || s.y > height) s.vy = -s.vy;
-
+            ctx.fillStyle = '#00ffff';
+            
+            for (let layer of layers) {
+                layer.y -= layer.speed;
+                if (layer.y < -10) {
+                    layer.y = height + 10;
+                    layer.width = Math.random() * width * 0.8 + width * 0.1;
+                }
                 ctx.beginPath();
-                ctx.arc(s.x, s.y, s.radius, 0, 2 * Math.PI);
-                ctx.fillStyle = 'white';
+                ctx.rect((width - layer.width) / 2, layer.y, layer.width, 2);
                 ctx.fill();
-
-                // Connect to other nearby stars
-                for (let j = i + 1; j < stars.length; j++) {
-                    let s2 = stars[j];
-                    let dx = s.x - s2.x;
-                    let dy = s.y - s2.y;
-                    let distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distance < 100) {
-                        ctx.beginPath();
-                        ctx.moveTo(s.x, s.y);
-                        ctx.lineTo(s2.x, s2.y);
-                        ctx.strokeStyle = `rgba(255, 64, 129, ${1 - distance / 100})`;
-                        ctx.stroke();
-                    }
-                }
-
-                // Connect to mouse if nearby
-                let dx = mouseX - s.x;
-                let dy = mouseY - s.y;
-                let distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < 150) {
-                    ctx.beginPath();
-                    ctx.moveTo(s.x, s.y);
-                    ctx.lineTo(mouseX, mouseY);
-                    ctx.strokeStyle = `rgba(255, 64, 129, ${1 - distance / 150})`;
-                    ctx.stroke();
-                }
             }
-
+            
             requestAnimationFrame(animate);
         }
-
+        
         window.addEventListener('resize', resize);
-        window.addEventListener('mousemove', function(e) {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-        });
-
+        
         init();
     </script>
 </body>
