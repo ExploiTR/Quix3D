@@ -58,6 +58,45 @@
             transform: translateY(-3px);
             box-shadow: 0 10px 20px rgba(255, 64, 129, 0.3);
         }
+        .disabled-button {
+            display: inline-block;
+            padding: 15px 30px;
+            background: grey;
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            cursor: not-allowed;
+        }
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            box-shadow: 0 10px 30px rgba(255, 64, 129, 0.3);
+            font-size: 1.2rem;
+        }
+        .popup button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #FF4081;
+            border: none;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .popup button:hover {
+            background: #FF1744;
+        }
     </style>
 </head>
 <body>
@@ -67,7 +106,13 @@
             <h1>Quix 3D</h1>
             <p>Affordable & Fast PLA/PETG Prototyping</p>
             <a href="mailto:quix3d@outlook.com?subject=Can%20you%20print%20this%20for%20me%3F&body=[Attach%20your%20STL%20file]%0D%0AHi%2C%20Can%20you%20please%20estimate%20the%20attached%20STL%20for%20me%3F" class="button">Get a Quote</a>
+            <a href="#" class="disabled-button" id="getAppButton">Get the App</a>
         </div>
+    </div>
+
+    <div class="popup" id="popup">
+        <p>Our app is currently in development. <br> Coming soon!</p>
+        <button id="closePopup">Close</button>
     </div>
 
     <script>
@@ -152,6 +197,19 @@
         window.addEventListener('mousemove', function(e) {
             mouseX = e.clientX;
             mouseY = e.clientY;
+        });
+
+        // Popup logic
+        const getAppButton = document.getElementById('getAppButton');
+        const popup = document.getElementById('popup');
+        const closePopup = document.getElementById('closePopup');
+
+        getAppButton.addEventListener('click', function() {
+            popup.style.display = 'block';
+        });
+
+        closePopup.addEventListener('click', function() {
+            popup.style.display = 'none';
         });
 
         init();
