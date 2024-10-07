@@ -3,286 +3,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quix 3D - Print Time Estimator</title>
+    <title>Quix 3D</title>
     <link href="https://fonts.googleapis.com/css2?family=Product+Sans&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
-            font-family: 'Product Sans', sans-serif;
-            color: white;
             overflow: hidden;
+            font-family: 'Product Sans', sans-serif;
+            background-color: black;
         }
-        .gradient-bg {
-            position: fixed;
+        #stars {
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
-            z-index: -1;
-        }
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
         }
         .content {
             position: relative;
             height: 100vh;
             display: flex;
-            transition: all 0.5s ease;
+            justify-content: center;
+            align-items: center;
         }
         .container {
-            background: rgba(0, 0, 0, 0.6);
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            max-width: 90%;
-            width: 400px;
-            transition: all 0.5s ease;
+            text-align: center;
         }
         h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        input, select, button {
-            padding: 0.75rem;
-            font-size: 1rem;
-            border-radius: 5px;
-            border: none;
-            background: rgba(255, 255, 255, 0.1);
+            font-size: 4.5rem;
             color: white;
+            margin-bottom: 0.5rem;
+            letter-spacing: -1px;
         }
-        input::placeholder, select, select option {
-            color: rgba(255, 255, 255, 0.7);
+        p {
+            font-size: 1.5rem;
+            background: linear-gradient(45deg, #FF4081, #FF1744);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 2rem;
         }
-        select option {
-            background: #333;
-        }
-        button {
+        .button {
+            display: inline-block;
+            padding: 15px 30px;
             background: linear-gradient(45deg, #FF4081, #FF1744);
             color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: bold;
-        }
-        button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(255, 23, 68, 0.4);
-        }
-        #result {
-            margin-top: 1rem;
+            text-decoration: none;
+            border-radius: 50px;
             font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(255, 64, 129, 0.3);
+        }
+        .disabled-button {
+            display: inline-block;
+            padding: 15px 30px;
+            background: grey;
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            cursor: not-allowed;
+        }
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 15px;
             text-align: center;
-            font-weight: bold;
-        }
-        #stlViewer {
-            flex: 1;
             display: none;
+            box-shadow: 0 10px 30px rgba(255, 64, 129, 0.3);
+            font-size: 1.2rem;
         }
-        .paint-options {
-            display: none;
-            margin-top: 1rem;
+        .popup button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #FF4081;
+            border: none;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .popup button:hover {
+            background: #FF1744;
         }
     </style>
 </head>
 <body>
-    <div class="gradient-bg"></div>
+    <canvas id="stars"></canvas>
     <div class="content">
         <div class="container">
-            <h1>3D Print Time Estimator</h1>
-            <form id="estimateForm">
-                <input type="file" accept=".stl" required id="stlFile">
-                <select name="quality" required>
-                    <option value="">Select Quality</option>
-                    <option value="high">High Quality (Slower)</option>
-                    <option value="medium">Medium Quality</option>
-                    <option value="low">Low Quality (Faster)</option>
-                </select>
-                <input type="number" name="infillPercentage" placeholder="Infill Percentage" min="0" max="100" required>
-                <div>
-                    <input type="checkbox" id="paintOption" name="paintOption">
-                    <label for="paintOption">Spray Paint</label>
-                </div>
-                <div class="paint-options">
-                    <select name="paintColor">
-                        <option value="">Select Color</option>
-                        <option value="golden">Golden</option>
-                        <option value="silver">Silver</option>
-                        <option value="white">White</option>
-                        <option value="blue">Blue</option>
-                        <option value="red">Red</option>
-                        <option value="green">Green</option>
-                        <option value="black">Black</option>
-                    </select>
-                    <input type="checkbox" id="primerOption" name="primerOption">
-                    <label for="primerOption">Add Primer</label>
-                    <input type="number" name="coats" placeholder="Number of Coats" min="1" max="5">
-                </div>
-                <button type="submit">Calculate Estimate</button>
-            </form>
-            <div id="result"></div>
+            <h1>Quix 3D</h1>
+            <p>Affordable & Fast PLA/PETG Prototyping</p>
+            <a href="mailto:quix3d@outlook.com?subject=Can%20you%20print%20this%20for%20me%3F&body=[Attach%20your%20STL%20file]%0D%0AHi%2C%20Can%20you%20please%20estimate%20the%20attached%20STL%20for%20me%3F" class="button">Get a Quote</a>
+            <a href="estimate.html" class="button" id="estimateButton">Estimate Cost</a>
+            <a href="#" class="disabled-button" id="getAppButton">Get the App</a>
         </div>
-        <div id="stlViewer"></div>
+    </div>
+
+    <div class="popup" id="popup">
+        <p>Our app is currently in development. <br> Coming soon!</p>
+        <button id="closePopup">Close</button>
     </div>
 
     <script>
-        let scene, camera, renderer, object;
+        const canvas = document.getElementById('stars');
+        const ctx = canvas.getContext('2d');
 
-        document.getElementById('stlFile').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const geometry = new THREE.STLLoader().parse(e.target.result);
-                    displaySTL(geometry);
-                };
-                reader.readAsArrayBuffer(file);
-            }
-        });
+        let width, height, stars;
+        let mouseX = 0, mouseY = 0;
 
-        function displaySTL(geometry) {
-            if (!scene) {
-                scene = new THREE.Scene();
-                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                renderer = new THREE.WebGLRenderer();
-                renderer.setSize(window.innerWidth / 2, window.innerHeight);
-                document.getElementById('stlViewer').appendChild(renderer.domElement);
-            }
-
-            if (object) {
-                scene.remove(object);
-            }
-
-            const material = new THREE.MeshPhongMaterial({ color: 0x00ff00, specular: 0x111111, shininess: 200 });
-            object = new THREE.Mesh(geometry, material);
-
-            scene.add(object);
-
-            const box = new THREE.Box3().setFromObject(object);
-            const center = box.getCenter(new THREE.Vector3());
-            const size = box.getSize(new THREE.Vector3());
-
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const fov = 75;
-            const cameraZ = maxDim / 2 / Math.tan((fov / 2) * Math.PI / 180);
-
-            camera.position.set(center.x, center.y, center.z + cameraZ);
-            camera.lookAt(center);
-
-            const light = new THREE.PointLight(0xffffff, 1, 100);
-            light.position.set(0, 0, 10);
-            scene.add(light);
-
-            function animate() {
-                requestAnimationFrame(animate);
-                object.rotation.y += 0.01;
-                renderer.render(scene, camera);
-            }
+        function init() {
+            resize();
             animate();
-
-            document.querySelector('.content').style.justifyContent = 'flex-start';
-            document.querySelector('.container').style.width = '40%';
-            document.getElementById('stlViewer').style.display = 'block';
         }
 
-        document.getElementById('paintOption').addEventListener('change', function(event) {
-            document.querySelector('.paint-options').style.display = event.target.checked ? 'block' : 'none';
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            stars = [];
+            for (let i = 0; i < 100; i++) {
+                stars.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    radius: Math.random() * 1 + 1,
+                    vx: Math.random() * 0.5 - 0.25,
+                    vy: Math.random() * 0.5 - 0.25
+                });
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            ctx.globalCompositeOperation = 'lighter';
+
+            for (let i = 0; i < stars.length; i++) {
+                let s = stars[i];
+
+                s.x += s.vx;
+                s.y += s.vy;
+
+                if (s.x < 0 || s.x > width) s.vx = -s.vx;
+                if (s.y < 0 || s.y > height) s.vy = -s.vy;
+
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.radius, 0, 2 * Math.PI);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+
+                // Connect to other nearby stars
+                for (let j = i + 1; j < stars.length; j++) {
+                    let s2 = stars[j];
+                    let dx = s.x - s2.x;
+                    let dy = s.y - s2.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 100) {
+                        ctx.beginPath();
+                        ctx.moveTo(s.x, s.y);
+                        ctx.lineTo(s2.x, s2.y);
+                        ctx.strokeStyle = `rgba(255, 64, 129, ${1 - distance / 100})`;
+                        ctx.stroke();
+                    }
+                }
+
+                // Connect to mouse if nearby
+                let dx = mouseX - s.x;
+                let dy = mouseY - s.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 150) {
+                    ctx.beginPath();
+                    ctx.moveTo(s.x, s.y);
+                    ctx.lineTo(mouseX, mouseY);
+                    ctx.strokeStyle = `rgba(255, 64, 129, ${1 - distance / 150})`;
+                    ctx.stroke();
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', function(e) {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
         });
 
-        document.getElementById('estimateForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const file = document.getElementById('stlFile').files[0];
-            const quality = formData.get('quality');
-            const infillPercentage = parseFloat(formData.get('infillPercentage'));
-            const paintOption = formData.get('paintOption') === 'on';
-            const paintColor = formData.get('paintColor');
-            const primerOption = formData.get('primerOption') === 'on';
-            const coats = parseInt(formData.get('coats') || '0');
+        // Popup logic
+        const getAppButton = document.getElementById('getAppButton');
+        const popup = document.getElementById('popup');
+        const closePopup = document.getElementById('closePopup');
 
-            calculateVolume(file).then(volume => {
-                const { minCost, maxCost, printTime } = estimateCostAndTime(volume, quality, infillPercentage, paintOption, coats);
-                
-                let resultText = `Estimated print time: ${printTime.toFixed(2)} hours<br>`;
-                resultText += `Estimated cost range: ₹${minCost.toFixed(2)} - ₹${maxCost.toFixed(2)}<br>`;
-                resultText += "Please request a quote with the file for an exact price.";
-
-                document.getElementById('result').innerHTML = resultText;
-            });
+        getAppButton.addEventListener('click', function() {
+            popup.style.display = 'block';
         });
 
-        function calculateVolume(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const geometry = new THREE.STLLoader().parse(e.target.result);
-                    const volume = getVolume(geometry);
-                    resolve(volume);
-                };
-                reader.onerror = reject;
-                reader.readAsArrayBuffer(file);
-            });
-        }
+        closePopup.addEventListener('click', function() {
+            popup.style.display = 'none';
+        });
 
-        function getVolume(geometry) {
-            let volume = 0;
-            const positions = geometry.attributes.position.array;
-            for (let i = 0; i < positions.length; i += 9) {
-                const t1x = positions[i], t1y = positions[i + 1], t1z = positions[i + 2];
-                const t2x = positions[i + 3], t2y = positions[i + 4], t2z = positions[i + 5];
-                const t3x = positions[i + 6], t3y = positions[i + 7], t3z = positions[i + 8];
-                volume += signedVolumeOfTriangle(t1x, t1y, t1z, t2x, t2y, t2z, t3x, t3y, t3z);
-            }
-            return Math.abs(volume) / 1000; // Convert to cm³
-        }
-
-        function signedVolumeOfTriangle(x1, y1, z1, x2, y2, z2, x3, y3, z3) {
-            return 1.0 / 6.0 * (-x3 * y2 * z1 + x2 * y3 * z1 + x3 * y1 * z2 - x1 * y3 * z2 - x2 * y1 * z3 + x1 * y2 * z3);
-        }
-
-        function estimateCostAndTime(volume, quality, infillPercentage, paintOption, coats) {
-            const materialCostPerKg = { min: 900, max: 1000 };
-            const electricityCostPerHour = 3.5;
-            const printerRentPerHour = { min: 10, max: 20 };
-            const deliveryCharge = { min: 30, max: 100 };
-
-            let printSpeed;
-            switch (quality) {
-                case 'high': printSpeed = 30; break;
-                case 'medium': printSpeed = 60; break;
-                case 'low': printSpeed = 100; break;
-                default: printSpeed = 60;
-            }
-
-            const printTime = (volume / 16) * (50 / printSpeed) * (infillPercentage / 20);
-            
-            const materialCost = (volume / 1000) * materialCostPerKg.min;
-            const electricityCost = printTime * electricityCostPerHour;
-            const printerRentCost = printTime * printerRentPerHour.min;
-
-            let paintCost = 0;
-            if (paintOption) {
-                paintCost = Math.min(Math.max(volume / 10, 10), 100) * coats;
-            }
-
-            const minCost = materialCost + electricityCost + printerRentCost + paintCost + deliveryCharge.min;
-            const maxCost = (volume / 1000) * materialCostPerKg.max + electricityCost + (printTime * printerRentPerHour.max) + paintCost + deliveryCharge.max;
-
-            return { minCost, maxCost, printTime };
-        }
+        init();
     </script>
 </body>
 </html>
