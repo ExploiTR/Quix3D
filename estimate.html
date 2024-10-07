@@ -162,7 +162,9 @@
     </div>
 
     <script>
-        let scene, camera, renderer, object;
+	let scene, camera, renderer, object, controls;
+	// Add this line at the beginning of your script
+	import { OrbitControls } from 'https://unpkg.com/three@0.128.0/examples/jsm/controls/OrbitControls.js';
 
         document.getElementById('stlFile').addEventListener('change', function(event) {
             console.log('File selected');
@@ -192,53 +194,67 @@
             }
         });
 
-        function displaySTL(geometry) {
-            console.log('Displaying STL');
-            if (!scene) {
-                scene = new THREE.Scene();
-                camera = new THREE.PerspectiveCamera(75, window.innerWidth / 2 / window.innerHeight, 0.1, 1000);
-                renderer = new THREE.WebGLRenderer({ antialias: true });
-                renderer.setSize(window.innerWidth / 2, window.innerHeight);
-                renderer.setClearColor(0x333333); // Set a dark gray background
-                document.getElementById('stlViewer').appendChild(renderer.domElement);
-            }
-
-            if (object) {
-                scene.remove(object);
-            }
-
-            const material = new THREE.MeshPhongMaterial({ color: 0x00ff00, specular: 0x111111, shininess: 200 });
-            object = new THREE.Mesh(geometry, material);
-
-            scene.add(object);
-
-            const box = new THREE.Box3().setFromObject(object);
-            const center = box.getCenter(new THREE.Vector3());
-            const size = box.getSize(new THREE.Vector3());
-
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const fov = 75;
-            const cameraZ = maxDim / 2 / Math.tan((fov / 2) * Math.PI / 180);
-
-            camera.position.set(center.x, center.y, center.z + cameraZ);
-            camera.lookAt(center);
-
-            const light = new THREE.PointLight(0xffffff, 1, 100);
-            light.position.set(0, 0, 10);
-            scene.add(light);
-
-            const ambientLight = new THREE.AmbientLight(0x404040); // Soft white light
-            scene.add(ambientLight);
-
-            function animate() {
-                requestAnimationFrame(animate);
-                object.rotation.y += 0.01;
-                renderer.render(scene, camera);
-            }
-            animate();
-
-            document.querySelector('.loading').style.display = 'none';
-        }
+		function displaySTL(geometry) {
+			console.log('Displaying STL');
+			if (!scene) {
+				scene = new THREE.Scene();
+				camera = new THREE.PerspectiveCamera(75, window.innerWidth / 2 / window.innerHeight, 0.1, 1000);
+				renderer = new THREE.WebGLRenderer({ antialias: true });
+				renderer.setSize(window.innerWidth / 2, window.innerHeight);
+				renderer.setClearColor(0xf0f0f0); // Light gray background
+				document.getElementById('stlViewer').appendChild(renderer.domElement);
+		
+				// Add OrbitControls
+				controls = new OrbitControls(camera, renderer.domElement);
+				controls.enableDamping = true;
+				controls.dampingFactor = 0.25;
+				controls.enableZoom = true;
+			}
+		
+			if (object) {
+				scene.remove(object);
+			}
+		
+			const material = new THREE.MeshPhongMaterial({ color: 0xcccccc, specular: 0x111111, shininess: 200 });
+			object = new THREE.Mesh(geometry, material);
+		
+			scene.add(object);
+		
+			const box = new THREE.Box3().setFromObject(object);
+			const center = box.getCenter(new THREE.Vector3());
+			const size = box.getSize(new THREE.Vector3());
+		
+			const maxDim = Math.max(size.x, size.y, size.z);
+			const fov = 75;
+			const cameraZ = maxDim / 2 / Math.tan((fov / 2) * Math.PI / 180);
+		
+			camera.position.set(center.x, center.y, center.z + cameraZ);
+			camera.lookAt(center);
+			controls.target.set(center.x, center.y, center.z);
+		
+			// Improved lighting
+			scene.remove(...scene.children.filter(child => child instanceof THREE.Light));
+		
+			const ambientLight = new THREE.AmbientLight(0x404040, 1);
+			scene.add(ambientLight);
+		
+			const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+			directionalLight1.position.set(1, 1, 1);
+			scene.add(directionalLight1);
+		
+			const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
+			directionalLight2.position.set(-1, -1, -1);
+			scene.add(directionalLight2);
+		
+			function animate() {
+				requestAnimationFrame(animate);
+				controls.update();
+				renderer.render(scene, camera);
+			}
+			animate();
+		
+			document.querySelector('.loading').style.display = 'none';
+		}
 		
         document.getElementById('paintOption').addEventListener('change', function(event) {
             document.querySelector('.paint-options').style.display = event.target.checked ? 'block' : 'none';
