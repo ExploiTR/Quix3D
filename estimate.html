@@ -36,11 +36,16 @@
             position: relative;
             height: 100vh;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.5s ease;
         }
         .container {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
             transition: all 0.5s ease;
         }
         h1 {
@@ -84,18 +89,9 @@
             text-align: center;
             font-weight: bold;
         }
-		#stlViewer {
+        #stlViewer {
             flex: 1;
             display: none;
-            position: relative;
-        }
-        .loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 1.5rem;
-            color: white;
         }
         .paint-options, .advanced-options {
             display: none;
@@ -156,9 +152,7 @@
             </form>
             <div id="result"></div>
         </div>
-        <div id="stlViewer">
-            <div class="loading">Loading STL file...</div>
-        </div>
+        <div id="stlViewer"></div>
     </div>
 
     <script>
@@ -168,10 +162,6 @@
             console.log('File selected');
             const file = event.target.files[0];
             if (file) {
-                document.getElementById('stlViewer').style.display = 'block';
-                document.querySelector('.content').style.justifyContent = 'flex-start';
-                document.querySelector('.container').style.marginRight = '2rem';
-
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     try {
@@ -193,13 +183,11 @@
         });
 
         function displaySTL(geometry) {
-            console.log('Displaying STL');
             if (!scene) {
                 scene = new THREE.Scene();
-                camera = new THREE.PerspectiveCamera(75, window.innerWidth / 2 / window.innerHeight, 0.1, 1000);
-                renderer = new THREE.WebGLRenderer({ antialias: true });
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                renderer = new THREE.WebGLRenderer();
                 renderer.setSize(window.innerWidth / 2, window.innerHeight);
-                renderer.setClearColor(0x333333); // Set a dark gray background
                 document.getElementById('stlViewer').appendChild(renderer.domElement);
             }
 
@@ -227,9 +215,6 @@
             light.position.set(0, 0, 10);
             scene.add(light);
 
-            const ambientLight = new THREE.AmbientLight(0x404040); // Soft white light
-            scene.add(ambientLight);
-
             function animate() {
                 requestAnimationFrame(animate);
                 object.rotation.y += 0.01;
@@ -237,7 +222,9 @@
             }
             animate();
 
-            document.querySelector('.loading').style.display = 'none';
+            document.querySelector('.container').style.width = '40%';
+            document.getElementById('stlViewer').style.display = 'block';
+			console.log('Displaying STL');
         }
 		
         document.getElementById('paintOption').addEventListener('change', function(event) {
@@ -276,7 +263,7 @@
             calculateVolume(file).then(volume => {
                 console.log('Volume calculated:', volume);
                 const { minCost, maxCost, printTime } = estimateCostAndTime(volume, quality, infillPercentage, paintOption, coats, layerHeight, wallThickness, topBottomLayers, printSpeed, retraction, supportDensity);
-                
+
                 let resultText = `Estimated print time: ${printTime.toFixed(2)} hours<br>`;
                 resultText += `Estimated cost range: ₹${minCost.toFixed(2)} - ₹${maxCost.toFixed(2)}<br>`;
                 resultText += "Please request a quote with the file for an exact price.";
@@ -337,7 +324,7 @@
             }
 
             const printTime = (volume / 16) * (0.2 / layerHeight) * (50 / adjustedPrintSpeed) * (infillPercentage / 20) * (1 + supportDensity / 100);
-            
+
             const materialCost = (volume / 1000) * materialCostPerKg.min;
             const electricityCost = printTime * electricityCostPerHour;
             const printerRentCost = printTime * printerRentPerHour.min;
