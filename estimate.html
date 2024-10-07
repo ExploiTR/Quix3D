@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Print Time Estimator</title>
+    <title>Quix 3D - Print Time Estimator</title>
     <link href="https://fonts.googleapis.com/css2?family=Product+Sans&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
@@ -35,7 +35,6 @@
             position: relative;
             height: 100vh;
             display: flex;
-            transition: all 0.5s ease;
         }
         .container {
             background: rgba(0, 0, 0, 0.6);
@@ -43,8 +42,9 @@
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             backdrop-filter: blur(10px);
-            max-width: 90%;
             width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
             transition: all 0.5s ease;
         }
         h1 {
@@ -92,9 +92,13 @@
             flex: 1;
             display: none;
         }
-        .paint-options {
+        .paint-options, .advanced-options {
             display: none;
             margin-top: 1rem;
+        }
+        label {
+            display: inline-block;
+            margin-bottom: 0.5rem;
         }
     </style>
 </head>
@@ -130,6 +134,18 @@
                     <input type="checkbox" id="primerOption" name="primerOption">
                     <label for="primerOption">Add Primer</label>
                     <input type="number" name="coats" placeholder="Number of Coats" min="1" max="5">
+                </div>
+                <div>
+                    <input type="checkbox" id="advancedOption" name="advancedOption">
+                    <label for="advancedOption">Advanced Options</label>
+                </div>
+                <div class="advanced-options">
+                    <input type="number" name="layerHeight" placeholder="Layer Height (mm)" step="0.01" min="0.1" max="0.4">
+                    <input type="number" name="wallThickness" placeholder="Wall Thickness (mm)" step="0.1" min="0.4" max="2">
+                    <input type="number" name="topBottomLayers" placeholder="Top/Bottom Layers" min="1" max="10">
+                    <input type="number" name="printSpeed" placeholder="Print Speed (mm/s)" min="10" max="150">
+                    <input type="number" name="retraction" placeholder="Retraction Distance (mm)" step="0.1" min="0" max="10">
+                    <input type="number" name="supportDensity" placeholder="Support Density (%)" min="0" max="100">
                 </div>
                 <button type="submit">Calculate Estimate</button>
             </form>
@@ -193,13 +209,16 @@
             }
             animate();
 
-            document.querySelector('.content').style.justifyContent = 'flex-start';
             document.querySelector('.container').style.width = '40%';
             document.getElementById('stlViewer').style.display = 'block';
         }
 
         document.getElementById('paintOption').addEventListener('change', function(event) {
             document.querySelector('.paint-options').style.display = event.target.checked ? 'block' : 'none';
+        });
+
+        document.getElementById('advancedOption').addEventListener('change', function(event) {
+            document.querySelector('.advanced-options').style.display = event.target.checked ? 'block' : 'none';
         });
 
         document.getElementById('estimateForm').addEventListener('submit', function(e) {
@@ -213,8 +232,16 @@
             const primerOption = formData.get('primerOption') === 'on';
             const coats = parseInt(formData.get('coats') || '0');
 
+            // Advanced options
+            const layerHeight = parseFloat(formData.get('layerHeight') || '0.2');
+            const wallThickness = parseFloat(formData.get('wallThickness') || '0.8');
+            const topBottomLayers = parseInt(formData.get('topBottomLayers') || '3');
+            const printSpeed = parseInt(formData.get('printSpeed') || '60');
+            const retraction = parseFloat(formData.get('retraction') || '5');
+            const supportDensity = parseInt(formData.get('supportDensity') || '20');
+
             calculateVolume(file).then(volume => {
-                const { minCost, maxCost, printTime } = estimateCostAndTime(volume, quality, infillPercentage, paintOption, coats);
+                const { minCost, maxCost, printTime } = estimateCostAndTime(volume, quality, infillPercentage, paintOption, coats, layerHeight, wallThickness, topBottomLayers, printSpeed, retraction, supportDensity);
                 
                 let resultText = `Estimated print time: ${printTime.toFixed(2)} hours<br>`;
                 resultText += `Estimated cost range: ₹${minCost.toFixed(2)} - ₹${maxCost.toFixed(2)}<br>`;
@@ -253,21 +280,20 @@
             return 1.0 / 6.0 * (-x3 * y2 * z1 + x2 * y3 * z1 + x3 * y1 * z2 - x1 * y3 * z2 - x2 * y1 * z3 + x1 * y2 * z3);
         }
 
-        function estimateCostAndTime(volume, quality, infillPercentage, paintOption, coats) {
+        function estimateCostAndTime(volume, quality, infillPercentage, paintOption, coats, layerHeight, wallThickness, topBottomLayers, printSpeed, retraction, supportDensity) {
             const materialCostPerKg = { min: 900, max: 1000 };
             const electricityCostPerHour = 3.5;
             const printerRentPerHour = { min: 10, max: 20 };
             const deliveryCharge = { min: 30, max: 100 };
 
-            let printSpeed;
+            let adjustedPrintSpeed = printSpeed;
             switch (quality) {
-                case 'high': printSpeed = 30; break;
-                case 'medium': printSpeed = 60; break;
-                case 'low': printSpeed = 100; break;
-                default: printSpeed = 60;
+                case 'high': adjustedPrintSpeed = Math.min(printSpeed, 40); break;
+                case 'medium': adjustedPrintSpeed = Math.min(printSpeed, 70); break;
+                case 'low': adjustedPrintSpeed = Math.min(printSpeed, 100); break;
             }
 
-            const printTime = (volume / 16) * (50 / printSpeed) * (infillPercentage / 20);
+            const printTime = (volume / 16) * (0.2 / layerHeight) * (50 / adjustedPrintSpeed) * (infillPercentage / 20) * (1 + supportDensity / 100);
             
             const materialCost = (volume / 1000) * materialCostPerKg.min;
             const electricityCost = printTime * electricityCostPerHour;
