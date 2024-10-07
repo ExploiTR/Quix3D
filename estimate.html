@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quix 3D - Print Time Estimator</title>
+    <title>Print Time Estimator</title>
     <link href="https://fonts.googleapis.com/css2?family=Product+Sans&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
@@ -27,22 +27,15 @@
             z-index: -1;
         }
         @keyframes gradient {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
         .content {
             position: relative;
             height: 100vh;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            transition: all 0.5s ease;
         }
         .container {
             background: rgba(0, 0, 0, 0.6);
@@ -52,6 +45,7 @@
             backdrop-filter: blur(10px);
             max-width: 90%;
             width: 400px;
+            transition: all 0.5s ease;
         }
         h1 {
             font-size: 2.5rem;
@@ -71,8 +65,11 @@
             background: rgba(255, 255, 255, 0.1);
             color: white;
         }
-        input::placeholder, select {
+        input::placeholder, select, select option {
             color: rgba(255, 255, 255, 0.7);
+        }
+        select option {
+            background: #333;
         }
         button {
             background: linear-gradient(45deg, #FF4081, #FF1744);
@@ -91,6 +88,14 @@
             text-align: center;
             font-weight: bold;
         }
+        #stlViewer {
+            flex: 1;
+            display: none;
+        }
+        .paint-options {
+            display: none;
+            margin-top: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -100,31 +105,122 @@
             <h1>3D Print Time Estimator</h1>
             <form id="estimateForm">
                 <input type="file" accept=".stl" required id="stlFile">
-                <select name="material" required>
-                    <option value="">Select Material</option>
-                    <option value="pla">PLA</option>
-                    <option value="petg">PETG</option>
+                <select name="quality" required>
+                    <option value="">Select Quality</option>
+                    <option value="high">High Quality (Slower)</option>
+                    <option value="medium">Medium Quality</option>
+                    <option value="low">Low Quality (Faster)</option>
                 </select>
-                <input type="number" name="layerHeight" placeholder="Layer Height (mm)" step="0.01" min="0.1" max="0.4" required>
                 <input type="number" name="infillPercentage" placeholder="Infill Percentage" min="0" max="100" required>
+                <div>
+                    <input type="checkbox" id="paintOption" name="paintOption">
+                    <label for="paintOption">Spray Paint</label>
+                </div>
+                <div class="paint-options">
+                    <select name="paintColor">
+                        <option value="">Select Color</option>
+                        <option value="golden">Golden</option>
+                        <option value="silver">Silver</option>
+                        <option value="white">White</option>
+                        <option value="blue">Blue</option>
+                        <option value="red">Red</option>
+                        <option value="green">Green</option>
+                        <option value="black">Black</option>
+                    </select>
+                    <input type="checkbox" id="primerOption" name="primerOption">
+                    <label for="primerOption">Add Primer</label>
+                    <input type="number" name="coats" placeholder="Number of Coats" min="1" max="5">
+                </div>
                 <button type="submit">Calculate Estimate</button>
             </form>
             <div id="result"></div>
         </div>
+        <div id="stlViewer"></div>
     </div>
 
     <script>
+        let scene, camera, renderer, object;
+
+        document.getElementById('stlFile').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const geometry = new THREE.STLLoader().parse(e.target.result);
+                    displaySTL(geometry);
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        });
+
+        function displaySTL(geometry) {
+            if (!scene) {
+                scene = new THREE.Scene();
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                renderer = new THREE.WebGLRenderer();
+                renderer.setSize(window.innerWidth / 2, window.innerHeight);
+                document.getElementById('stlViewer').appendChild(renderer.domElement);
+            }
+
+            if (object) {
+                scene.remove(object);
+            }
+
+            const material = new THREE.MeshPhongMaterial({ color: 0x00ff00, specular: 0x111111, shininess: 200 });
+            object = new THREE.Mesh(geometry, material);
+
+            scene.add(object);
+
+            const box = new THREE.Box3().setFromObject(object);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const fov = 75;
+            const cameraZ = maxDim / 2 / Math.tan((fov / 2) * Math.PI / 180);
+
+            camera.position.set(center.x, center.y, center.z + cameraZ);
+            camera.lookAt(center);
+
+            const light = new THREE.PointLight(0xffffff, 1, 100);
+            light.position.set(0, 0, 10);
+            scene.add(light);
+
+            function animate() {
+                requestAnimationFrame(animate);
+                object.rotation.y += 0.01;
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            document.querySelector('.content').style.justifyContent = 'flex-start';
+            document.querySelector('.container').style.width = '40%';
+            document.getElementById('stlViewer').style.display = 'block';
+        }
+
+        document.getElementById('paintOption').addEventListener('change', function(event) {
+            document.querySelector('.paint-options').style.display = event.target.checked ? 'block' : 'none';
+        });
+
         document.getElementById('estimateForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
             const file = document.getElementById('stlFile').files[0];
-            const material = formData.get('material');
-            const layerHeight = parseFloat(formData.get('layerHeight'));
+            const quality = formData.get('quality');
             const infillPercentage = parseFloat(formData.get('infillPercentage'));
+            const paintOption = formData.get('paintOption') === 'on';
+            const paintColor = formData.get('paintColor');
+            const primerOption = formData.get('primerOption') === 'on';
+            const coats = parseInt(formData.get('coats') || '0');
 
             calculateVolume(file).then(volume => {
-                const printTime = estimatePrintTime(volume, material, layerHeight, infillPercentage);
-                document.getElementById('result').textContent = `Estimated print time: ${printTime.toFixed(2)} hours`;
+                const { minCost, maxCost, printTime } = estimateCostAndTime(volume, quality, infillPercentage, paintOption, coats);
+                
+                let resultText = `Estimated print time: ${printTime.toFixed(2)} hours<br>`;
+                resultText += `Estimated cost range: ₹${minCost.toFixed(2)} - ₹${maxCost.toFixed(2)}<br>`;
+                resultText += "Please request a quote with the file for an exact price.";
+
+                document.getElementById('result').innerHTML = resultText;
             });
         });
 
@@ -133,7 +229,6 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const geometry = new THREE.STLLoader().parse(e.target.result);
-                    geometry.computeBoundingBox();
                     const volume = getVolume(geometry);
                     resolve(volume);
                 };
@@ -146,15 +241,9 @@
             let volume = 0;
             const positions = geometry.attributes.position.array;
             for (let i = 0; i < positions.length; i += 9) {
-                const t1x = positions[i];
-                const t1y = positions[i + 1];
-                const t1z = positions[i + 2];
-                const t2x = positions[i + 3];
-                const t2y = positions[i + 4];
-                const t2z = positions[i + 5];
-                const t3x = positions[i + 6];
-                const t3y = positions[i + 7];
-                const t3z = positions[i + 8];
+                const t1x = positions[i], t1y = positions[i + 1], t1z = positions[i + 2];
+                const t2x = positions[i + 3], t2y = positions[i + 4], t2z = positions[i + 5];
+                const t3x = positions[i + 6], t3y = positions[i + 7], t3z = positions[i + 8];
                 volume += signedVolumeOfTriangle(t1x, t1y, t1z, t2x, t2y, t2z, t3x, t3y, t3z);
             }
             return Math.abs(volume) / 1000; // Convert to cm³
@@ -164,13 +253,35 @@
             return 1.0 / 6.0 * (-x3 * y2 * z1 + x2 * y3 * z1 + x3 * y1 * z2 - x1 * y3 * z2 - x2 * y1 * z3 + x1 * y2 * z3);
         }
 
-        function estimatePrintTime(volume, material, layerHeight, infillPercentage) {
-            const baseTime = volume / 16; // cm³ per hour
-            const materialFactor = material === 'pla' ? 1 : 1.2;
-            const layerFactor = 0.1 / layerHeight;
-            const infillFactor = infillPercentage / 20;
+        function estimateCostAndTime(volume, quality, infillPercentage, paintOption, coats) {
+            const materialCostPerKg = { min: 900, max: 1000 };
+            const electricityCostPerHour = 3.5;
+            const printerRentPerHour = { min: 10, max: 20 };
+            const deliveryCharge = { min: 30, max: 100 };
+
+            let printSpeed;
+            switch (quality) {
+                case 'high': printSpeed = 30; break;
+                case 'medium': printSpeed = 60; break;
+                case 'low': printSpeed = 100; break;
+                default: printSpeed = 60;
+            }
+
+            const printTime = (volume / 16) * (50 / printSpeed) * (infillPercentage / 20);
             
-            return baseTime * materialFactor * layerFactor * infillFactor;
+            const materialCost = (volume / 1000) * materialCostPerKg.min;
+            const electricityCost = printTime * electricityCostPerHour;
+            const printerRentCost = printTime * printerRentPerHour.min;
+
+            let paintCost = 0;
+            if (paintOption) {
+                paintCost = Math.min(Math.max(volume / 10, 10), 100) * coats;
+            }
+
+            const minCost = materialCost + electricityCost + printerRentCost + paintCost + deliveryCharge.min;
+            const maxCost = (volume / 1000) * materialCostPerKg.max + electricityCost + (printTime * printerRentPerHour.max) + paintCost + deliveryCharge.max;
+
+            return { minCost, maxCost, printTime };
         }
     </script>
 </body>
