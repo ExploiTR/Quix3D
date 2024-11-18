@@ -50,7 +50,8 @@ body, html {
     padding: 20px;
     box-sizing: border-box;
     justify-content: center;
-    align-items: stretch;
+    align-items: flex-start; /* Change from stretch to flex-start */
+    overflow: hidden; /* Add this */
   }
   
   /* STL Viewer */
@@ -87,7 +88,7 @@ body, html {
     padding: 10px 0;
   }
   
-  /* Containers */
+  /* Modify the .container, .right-options CSS */
   .container, .right-options {
     flex: 1;
     background: rgba(0, 0, 0, 0.7);
@@ -99,8 +100,11 @@ body, html {
     min-width: 300px;
     max-width: 400px;
     height: calc(100vh - 40px);
+    max-height: calc(100vh - 40px); /* Add this */
     overflow-y: auto;
+    box-sizing: border-box; /* Add this */
   }
+
   
   /* Typography */
   h1 {
