@@ -24,6 +24,35 @@
         background: #1a1a1a;
       }
 
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            45deg,
+            transparent 48%,
+            rgba(255, 255, 255, 0.08) 50%,
+            transparent 52%
+          ),
+          linear-gradient(
+            -45deg,
+            transparent 48%,
+            rgba(255, 255, 255, 0.08) 50%,
+            transparent 52%
+          );
+        background-size: 30px 30px;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      /* Add a very subtle gradient overlay */
+      body {
+        background: linear-gradient(135deg, #1a1a1a, #252525);
+      }
+
       .gradient-bg {
         position: fixed;
         top: 0;
@@ -58,6 +87,25 @@
         justify-content: center;
       }
 
+      .content {
+        display: flex;
+        gap: 20px;
+        padding: 20px;
+        justify-content: space-between;
+      }
+
+      .container,
+      .right-options {
+        flex: 1;
+        min-width: 300px;
+        width: 300px;
+      }
+
+      #stlViewer {
+        flex: 2;
+        min-width: 400px;
+      }
+
       .container {
         background: rgba(0, 0, 0, 0.7);
         padding: 2rem;
@@ -72,12 +120,12 @@
       }
 
       #stlViewer {
-        flex: 1;
-        max-width: calc(100% - 440px);
-        height: calc(100vh - 40px);
+        aspect-ratio: 1/1;
         background: rgba(0, 0, 0, 0.7);
         border-radius: 15px;
         overflow: hidden;
+        height: calc(100vh - 40px);
+        width: auto;
       }
 
       h1 {
@@ -278,21 +326,95 @@
       .advanced-options {
         display: none; /* Hide by default */
       }
+
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+        overflow-y: auto; /* Enable scrolling */
+      }
+
+      .modal-content {
+        position: relative;
+        background: rgba(0, 0, 0, 0.9);
+        margin: 5% auto; /* Reduced from 15% to 5% */
+        padding: 20px;
+        width: 80%;
+        max-width: 600px;
+        border-radius: 15px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+      }
+
+      .printer-image {
+        width: 80%;
+        height: 80%;
+        object-fit: contain;
+        border-radius: 16px; /* Increased from 8px for more rounded corners */
+        margin-bottom: 20px;
+      }
+
+      .printer-specs {
+        color: white;
+        font-family: "Product Sans", sans-serif;
+      }
+
+      .printer-specs h3 {
+        color: #4caf50;
+        margin-bottom: 15px;
+      }
+
+      .printer-specs ul {
+        list-style-type: none;
+        padding: 0;
+      }
+
+      .printer-specs li {
+        padding: 8px 0;
+        padding-left: 20px;
+        position: relative;
+      }
+
+      .printer-specs li:before {
+        content: "•";
+        color: #4caf50;
+        position: absolute;
+        left: 0;
+      }
+
+      .close-btn {
+        position: absolute;
+        right: 15px;
+        top: 15px;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 5px;
+      }
     </style>
   </head>
   <body>
     <div class="gradient-bg"></div>
     <div class="content">
       <div class="container">
-        <h1>3D Print Time Estimator</h1>
+        <h2>Estimate Print Time</h2>
         <form id="estimateForm">
           <input type="file" accept=".stl" required id="stlFile" />
+          <label>Quality Settings (See Advanced)</label>
           <select name="quality" required>
             <option value="">Select Quality</option>
             <option value="high" selected>High Quality (Slower)</option>
             <option value="medium">Medium Quality</option>
             <option value="low">Low Quality (Faster)</option>
           </select>
+          <label>Infill Percentage</label>
           <input
             type="number"
             name="infillPercentage"
@@ -303,6 +425,16 @@
             value="20"
           />
           <button type="submit">Calculate Estimate</button>
+          <button
+            type="button"
+            id="printerConfigBtn"
+            style="
+              margin-top: 10px;
+              background: linear-gradient(45deg, #4caf50, #45a049);
+            "
+          >
+            Printer Config
+          </button>
         </form>
         <div id="result"></div>
       </div>
@@ -436,6 +568,19 @@
           }
         });
 
+      function resizeSTLViewer() {
+        const viewer = document.getElementById("stlViewer");
+        const container = viewer.querySelector("canvas");
+        if (container) {
+          const height = container.clientHeight;
+          viewer.style.width = height + "px";
+          renderer.setSize(height, height);
+        }
+      }
+
+      window.addEventListener("resize", resizeSTLViewer);
+      window.addEventListener("load", resizeSTLViewer);
+
       function formatTime(hours) {
         const h = Math.floor(hours);
         const m = Math.floor((hours - h) * 60);
@@ -473,10 +618,24 @@
           if (controls) {
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
-            controls.screenSpacePanning = false;
+            controls.screenSpacePanning = true;
             controls.minDistance = 1;
             controls.maxDistance = 500;
-            controls.maxPolarAngle = Math.PI;
+            controls.maxPolarAngle = Infinity; // Changed from Math.PI
+            controls.minPolarAngle = -Infinity; // Changed to allow full rotation
+            controls.enableRotate = true;
+            controls.rotateSpeed = 0.5;
+            controls.enableZoom = true;
+            controls.zoomSpeed = 1.0;
+            controls.enablePan = true;
+            controls.panSpeed = 1.0;
+            controls.minAzimuthAngle = -Infinity; // Add this for horizontal rotation
+            controls.maxAzimuthAngle = Infinity; // Add this for horizontal rotation
+            controls.mouseButtons = {
+              LEFT: THREE.MOUSE.ROTATE,
+              MIDDLE: THREE.MOUSE.DOLLY,
+              RIGHT: THREE.MOUSE.PAN,
+            };
           }
         }
 
@@ -545,10 +704,12 @@
         }
 
         animate();
+        resizeSTLViewer();
 
         document.querySelector(".container").style.width = "40%";
         document.getElementById("stlViewer").style.display = "block";
       }
+
       // Add window resize handler
       window.addEventListener("resize", function () {
         if (camera && renderer) {
@@ -588,33 +749,51 @@
             return;
           }
 
-          // Log all values to debug
-          console.log({
+          // Get all values properly
+          const values = {
             quality: formData.get("quality"),
-            infill: formData.get("infillPercentage"),
+            infill: parseFloat(formData.get("infillPercentage")) || 20,
             paintOption: document.getElementById("paintOption").checked,
-            coats: formData.get("coats"),
-            layerHeight: formData.get("layerHeight"),
-            wallThickness: formData.get("wallThickness"),
-            topBottomLayers: formData.get("topBottomLayers"),
-            printSpeed: formData.get("printSpeed"),
-            support: document.getElementById("supportOption").checked, // Let's check this value
-          });
+            coats:
+              parseInt(document.querySelector('input[name="coats"]').value) ||
+              2,
+            primer: document.getElementById("primerOption").checked,
+            layerHeight:
+              parseFloat(
+                document.querySelector('input[name="layerHeight"]').value
+              ) || 0.2,
+            wallThickness:
+              parseFloat(
+                document.querySelector('input[name="wallThickness"]').value
+              ) || 0.8,
+            topBottomLayers:
+              parseInt(
+                document.querySelector('input[name="topBottomLayers"]').value
+              ) || 2,
+            printSpeed:
+              parseFloat(
+                document.querySelector('input[name="printSpeed"]').value
+              ) || 100,
+            support: document.getElementById("supportOption").checked,
+          };
+
+          // Debug log to verify values
+          console.log("Form Values:", values);
 
           calculateVolume(file)
             .then((volume) => {
               const result = estimateCostAndTime(
                 volume,
-                formData.get("quality"),
-                parseFloat(formData.get("infillPercentage")) || 20,
-                document.getElementById("paintOption").checked,
-                parseInt(formData.get("coats")) || 2,
-                document.getElementById("primerOption").checked,
-                parseFloat(formData.get("layerHeight")) || 0.2,
-                parseFloat(formData.get("wallThickness")) || 0.8,
-                parseInt(formData.get("topBottomLayers")) || 2,
-                parseInt(formData.get("printSpeed")) || 100,
-                document.getElementById("supportOption").checked
+                values.quality,
+                values.infill,
+                values.paintOption,
+                values.coats,
+                values.primer,
+                values.layerHeight,
+                values.wallThickness,
+                values.topBottomLayers,
+                values.printSpeed,
+                values.support
               );
 
               const resultDiv = document.getElementById("result");
@@ -627,10 +806,31 @@
    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
        <div style="margin-bottom: 10px">
            <b>Base Print Cost:</b><br>
-           Starting from ₹${result.printCost.min.toFixed(0)}
+           ₹${result.printCost.min.toFixed(0)}
            <span style="color: #888"> up to ₹${result.printCost.max.toFixed(
              0
            )}</span>
+       </div>
+
+       <div style="margin-bottom: 10px">
+           <b>Labor Charge:</b><br>
+           ₹${(result.printCost.min * 0.2).toFixed(0)} - ${(
+                result.printCost.max * 0.2
+              ).toFixed(0)}
+       </div>
+
+       <div style="margin-bottom: 10px">
+           <b>Machine Wear:</b><br>
+           ₹${(result.printCost.min * 0.2).toFixed(0)} - ${(
+                result.printCost.max * 0.2
+              ).toFixed(0)}
+       </div>
+
+       <div style="margin-bottom: 10px">
+           <b>GST (18%):</b><br>
+           ₹${(result.printCost.min * 0.18).toFixed(0)} - ${(
+                result.printCost.max * 0.18
+              ).toFixed(0)}
        </div>
 
        <div style="margin-bottom: 10px">
@@ -640,7 +840,11 @@
 
        <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1)">
            <b>Total Estimate:</b><br>
-           ₹${result.total.min.toFixed(0)} - ${result.total.max.toFixed(0)}
+           Starting ₹${result.total.min.toFixed(
+             0
+           )} <span style="color: #888"> up to ₹${result.total.max.toFixed(
+                0
+              )}</span>
        </div>
    </div>
 `;
@@ -653,6 +857,24 @@
 
       document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("result").style.display = "none";
+        document
+          .getElementById("printerConfigBtn")
+          .addEventListener("click", function (e) {
+            e.preventDefault();
+            document.getElementById("printerModal").style.display = "block";
+          });
+
+        document
+          .querySelector(".close-btn")
+          .addEventListener("click", function () {
+            document.getElementById("printerModal").style.display = "none";
+          });
+
+        window.addEventListener("click", function (e) {
+          if (e.target == document.getElementById("printerModal")) {
+            document.getElementById("printerModal").style.display = "none";
+          }
+        });
       });
 
       function calculateVolume(file) {
@@ -726,53 +948,184 @@
         printSpeed,
         support
       ) {
-        // Base print time calculation
-        let printTime = volume * 0.0735;
+        console.log("Calculation inputs:", {
+          volume,
+          quality,
+          infillPercentage,
+          paintOption,
+          coats,
+          primer,
+          layerHeight,
+          wallThickness,
+          topBottomLayers,
+          printSpeed,
+          support,
+        });
 
-        // Quality adjustments
-        let qualityMultipliers = {
+        // Base print time calculation (in hours)
+        let printTime = volume * 0.04;
+
+        // Quality multipliers
+        const qualityMultipliers = {
           high: { time: 1.2, cost: 1.15 },
           medium: { time: 1.1, cost: 1.1 },
           low: { time: 1, cost: 1 },
         };
 
+        // Apply quality multiplier
         printTime *= qualityMultipliers[quality].time;
 
-        // Support, layer height, speed and infill adjustments
-        if (support) printTime *= 1.3;
-        printTime *= 0.2 / layerHeight;
-        printTime *= 50 / printSpeed;
-        printTime *= infillPercentage / 20;
+        // Layer height impact (0.2mm is baseline)
+        printTime *= (0.2 / layerHeight) * 1.2;
 
-        // Speed adjustment (20 = base speed, 100 = 5% faster)
-        printTime *= 1 - ((printSpeed - 20) / 80) * 0.05;
+        // Wall thickness impact
+        printTime *= wallThickness / 0.8;
 
-        // Base print cost (₹15 for 15.55 cm³)
+        // Top/Bottom layers impact (2 is baseline)
+        printTime *= topBottomLayers / 2;
+
+        // Speed impact - faster speed = less time
+        printTime *= 100 / printSpeed;
+
+        // Tiny inefficiency factor for very high speeds
+        if (printSpeed > 100) {
+          printTime *= 1 + (printSpeed - 100) * 0.001;
+        }
+
+        // Infill impact (20% is baseline)
+        printTime *= 0.7 + 0.3 * (infillPercentage / 20);
+
+        // Support structure impact
+        if (support) {
+          printTime *= 1.3;
+        }
+
+        // Base print cost calculation
         let basePrintCost = volume * 0.965;
+
+        // Apply quality multiplier to cost
         let minPrintCost = basePrintCost * qualityMultipliers[quality].cost;
-        let maxPrintCost = minPrintCost * 1.2;
+
+        // Add machine operation cost (₹3.5 per hour)
+        let operationCost = printTime * 3.5;
+        minPrintCost += operationCost;
+
+        // Adjust cost based on infill
+        minPrintCost *= (infillPercentage / 20) * 0.3 + 0.7;
+
+        // Wall thickness impact on cost
+        minPrintCost *= wallThickness / 0.8;
+
+        // Support structure cost impact
+        if (support) {
+          minPrintCost *= 1.15;
+        }
 
         // Paint costs
         if (paintOption) {
-          const paintCost =
-            Math.min(Math.max(volume / 10, 10), 100) * coats + (coats - 1) * 10;
-          if (primer) minPrintCost += 20;
-          minPrintCost += paintCost;
-          maxPrintCost += paintCost;
+          const surfaceArea = Math.pow(volume, 2 / 3) * 4.836;
+          const paintCostPerCoat = Math.min(
+            Math.max(surfaceArea / 10, 10),
+            100
+          );
+          const totalPaintCost = paintCostPerCoat * coats;
+
+          if (primer) {
+            minPrintCost += 20;
+          }
+          minPrintCost += totalPaintCost;
         }
 
+        // Add labor charge (20% of print cost)
+        let laborCharge = minPrintCost * 0.2;
+        minPrintCost += laborCharge;
+
+        // Add machine wear charge (20% of print cost)
+        let wearCharge = minPrintCost * 0.2;
+        minPrintCost += wearCharge;
+
+        // Calculate tax (18%) before delivery
+        let minTax = minPrintCost * 0.18;
+        let maxTax = minPrintCost * 1.2 * 0.18;
+
+        // Maximum cost is 20% more than minimum
+        let maxPrintCost = minPrintCost * 1.2;
+
+        // Delivery costs
         const delivery = { min: 60, max: 120 };
+
+        // Calculate total (including tax)
+        const total = {
+          min: minPrintCost + minTax + delivery.min,
+          max: maxPrintCost + maxTax + delivery.max,
+        };
+
+        console.log("Calculation results:", {
+          printTime,
+          printCost: { min: minPrintCost, max: maxPrintCost },
+          delivery,
+          total,
+          laborCharge,
+          wearCharge,
+          operationCost,
+        });
 
         return {
           printTime,
           printCost: { min: minPrintCost, max: maxPrintCost },
           delivery,
-          total: {
-            min: minPrintCost + delivery.min,
-            max: maxPrintCost + delivery.max,
-          },
+          total,
         };
       }
+
+      function addNumericValidation(inputName, min, max, defaultVal) {
+        const input = document.querySelector(`input[name="${inputName}"]`);
+        if (input) {
+          input.addEventListener("change", function () {
+            let value = parseFloat(this.value);
+            if (isNaN(value) || value < min) {
+              this.value = min;
+            } else if (value > max) {
+              this.value = max;
+            }
+          });
+        }
+      }
+
+      // Add validations when document loads
+      document.addEventListener("DOMContentLoaded", function () {
+        addNumericValidation("coats", 1, 5, 2);
+        addNumericValidation("layerHeight", 0.1, 0.4, 0.2);
+        addNumericValidation("wallThickness", 0.4, 2, 0.8);
+        addNumericValidation("topBottomLayers", 1, 5, 2);
+        addNumericValidation("printSpeed", 25, 150, 100);
+        addNumericValidation("infillPercentage", 0, 100, 20);
+      });
     </script>
+
+    <div id="printerModal" class="modal">
+      <div class="modal-content">
+        <button class="close-btn">&times;</button>
+        <div class="printer-specs">
+          <h3>Modified Ender 3 V2 2020</h3>
+          <ul>
+            <li>Direct Drive with BLTouch</li>
+            <li>
+              Precisely Calibrated for <=0.15mm tolerence and faster print
+            </li>
+            <li>Running on Klipper on Raspberry PI</li>
+            <li>Tuned for Bed Mesh and Input Shaping & Pressure Advance</li>
+            <li>Upgraded fan ducts and belts</li>
+            <li>Patterned PEI texture plate</li>
+            <li>220x220x250 Build Volume</li>
+          </ul>
+        </div>
+        <img
+          src="printer.jpg"
+          alt="Modified Ender 3 V2"
+          class="printer-image"
+        />
+      </div>
+    </div>
   </body>
 </html>
