@@ -1011,7 +1011,8 @@
         minPrintCost += operationCost;
 
         // Adjust cost based on infill
-        minPrintCost *= (infillPercentage / 20) * 0.3 + 0.7;
+        let infillCostFactor = 1 + Math.log(infillPercentage / 20) * 0.2;
+        minPrintCost *= infillCostFactor;
 
         // Wall thickness impact on cost
         minPrintCost *= wallThickness / 0.8;
