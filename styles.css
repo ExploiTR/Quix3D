@@ -1,0 +1,300 @@
+/* Reset and Base Styles */
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: "Product Sans", sans-serif;
+    color: white;
+    overflow: hidden;
+    background: #1a1a1a;
+  }
+  
+  /* Background Patterns and Gradients */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+      linear-gradient(45deg, transparent 48%, rgba(255, 255, 255, 0.08) 50%, transparent 52%),
+      linear-gradient(-45deg, transparent 48%, rgba(255, 255, 255, 0.08) 50%, transparent 52%);
+    background-size: 30px 30px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  body {
+    background: linear-gradient(135deg, #1a1a1a, #252525);
+  }
+  
+  .gradient-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(-45deg, #1a1a1a, #2d2d2d, #1f1f1f, #2a2a2a);
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+    z-index: -1;
+  }
+  
+  /* Layout */
+  .content {
+    position: relative;
+    height: 100vh;
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    box-sizing: border-box;
+    justify-content: center;
+    align-items: stretch;
+  }
+  
+  /* STL Viewer */
+  #stlViewer {
+    flex: 1;
+    min-width: 300px;
+    max-width: 945px;
+    aspect-ratio: 1/1;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 15px;
+    overflow: hidden;
+    height: calc(100vh - 40px);
+  }
+
+  .discount-display {
+    margin: 10px 0;
+    padding: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+  }
+  
+  #discountPercentage {
+    font-weight: bold;
+    color: #4caf50;
+  }
+
+  .paint-options {
+    display: none;
+    padding: 10px 0;
+  }
+  
+  .advanced-options {
+    display: none;
+    padding: 10px 0;
+  }
+  
+  /* Containers */
+  .container, .right-options {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    width: 350px !important;
+    min-width: 300px;
+    max-width: 400px;
+    height: calc(100vh - 40px);
+    overflow-y: auto;
+  }
+  
+  /* Typography */
+  h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: white;
+    font-weight: 500;
+    letter-spacing: -0.5px;
+  }
+  
+  /* Forms */
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  input, select {
+    padding: 12px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    transition: all 0.3s ease;
+  }
+  
+  input:focus, select:focus {
+    outline: none;
+    border-color: #ff4081;
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+  
+  select option {
+    background: #2a2a2a;
+    color: white;
+  }
+  
+  /* Checkboxes */
+  .checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+  }
+  
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+  }
+  
+  /* Scrollbar Styles */
+  .container::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+  }
+  
+  .container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+  
+  .container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+  
+  /* Buttons */
+  button {
+    padding: 12px 24px;
+    background: linear-gradient(45deg, #ff4081, #ff1744);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 23, 68, 0.4);
+  }
+  
+  /* File Input */
+  input[type="file"] {
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    cursor: pointer;
+    width: calc(100% - 20px);
+  }
+  
+  input[type="file"]::-webkit-file-upload-button {
+    padding: 8px 16px;
+    background: linear-gradient(45deg, #ff4081, #ff1744);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-right: 10px;
+  }
+  
+  /* Number Input */
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  
+  /* Labels */
+  label {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+    display: block;
+  }
+  
+  /* Option Groups */
+  .option-group {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+  }
+  
+  .option-title {
+    font-size: 1.1rem;
+    color: white;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+  
+  .option-description {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 10px;
+    line-height: 1.4;
+  }
+  
+  /* Results */
+  #result {
+    display: none;
+    border: 1px solid rgba(255, 64, 129, 0.3);
+    background: rgba(255, 64, 129, 0.1);
+    padding: 15px;
+    margin-top: 20px;
+    border-radius: 8px;
+  }
+  
+  /* Modal */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    overflow-y: auto;
+  }
+  
+  .modal-content {
+    position: relative;
+    background: rgba(0, 0, 0, 0.9);
+    margin: 5% auto;
+    padding: 20px;
+    width: 80%;
+    max-width: 600px;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+  }
+  
+  /* Animations */
+  @keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }

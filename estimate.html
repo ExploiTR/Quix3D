@@ -12,393 +12,7 @@
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
-    <style>
-      body,
-      html {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        font-family: "Product Sans", sans-serif;
-        color: white;
-        overflow: hidden;
-        background: #1a1a1a;
-      }
-
-      body::before {
-        content: "";
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(
-            45deg,
-            transparent 48%,
-            rgba(255, 255, 255, 0.08) 50%,
-            transparent 52%
-          ),
-          linear-gradient(
-            -45deg,
-            transparent 48%,
-            rgba(255, 255, 255, 0.08) 50%,
-            transparent 52%
-          );
-        background-size: 30px 30px;
-        pointer-events: none;
-        z-index: 0;
-      }
-
-      /* Add a very subtle gradient overlay */
-      body {
-        background: linear-gradient(135deg, #1a1a1a, #252525);
-      }
-
-      .gradient-bg {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(-45deg, #1a1a1a, #2d2d2d, #1f1f1f, #2a2a2a);
-        background-size: 400% 400%;
-        animation: gradient 15s ease infinite;
-        z-index: -1;
-      }
-
-      @keyframes gradient {
-        0% {
-          background-position: 0% 50%;
-        }
-        50% {
-          background-position: 100% 50%;
-        }
-        100% {
-          background-position: 0% 50%;
-        }
-      }
-
-      .content {
-        position: relative;
-        height: 100vh;
-        display: flex;
-        gap: 20px;
-        padding: 20px;
-        box-sizing: border-box;
-        justify-content: center;
-      }
-
-      .content {
-        display: flex;
-        gap: 20px;
-        padding: 20px;
-        justify-content: space-between;
-      }
-
-      .container,
-      .right-options {
-        flex: 1;
-        min-width: 300px;
-        width: 300px;
-      }
-
-      #stlViewer {
-        flex: 2;
-        min-width: 400px;
-      }
-
-      .container {
-        background: rgba(0, 0, 0, 0.7);
-        padding: 2rem;
-        border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        backdrop-filter: blur(10px);
-        width: 300px !important;
-        min-width: 300px;
-        max-width: 300px;
-        height: calc(100vh - 40px);
-        overflow-y: auto;
-      }
-
-      #stlViewer {
-        aspect-ratio: 1/1;
-        background: rgba(0, 0, 0, 0.7);
-        border-radius: 15px;
-        overflow: hidden;
-        height: calc(100vh - 40px);
-        width: auto;
-      }
-
-      h1 {
-        font-size: 2.5rem;
-        margin-bottom: 1.5rem;
-        text-align: center;
-        color: white;
-        font-weight: 500;
-        letter-spacing: -0.5px;
-      }
-
-      form {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-      }
-
-      input,
-      select {
-        padding: 12px;
-        font-size: 1rem;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.05);
-        color: white;
-        transition: all 0.3s ease;
-      }
-
-      input:focus,
-      select:focus {
-        outline: none;
-        border-color: #ff4081;
-        background: rgba(255, 255, 255, 0.1);
-      }
-
-      input::placeholder {
-        color: rgba(255, 255, 255, 0.5);
-      }
-
-      select option {
-        background: #2a2a2a;
-        color: white;
-      }
-
-      .checkbox-container {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 0;
-      }
-
-      input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        cursor: pointer;
-      }
-
-      .paint-options,
-      .advanced-options {
-        background: rgba(255, 255, 255, 0.05);
-        padding: 15px;
-        border-radius: 8px;
-        margin-top: 10px;
-      }
-
-      .container::-webkit-scrollbar {
-        width: 8px;
-      }
-
-      .container::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 4px;
-      }
-
-      .container::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-      }
-
-      .container::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.3);
-      }
-
-      button {
-        padding: 12px 24px;
-        background: linear-gradient(45deg, #ff4081, #ff1744);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        font-size: 1rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s ease;
-      }
-
-      button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(255, 23, 68, 0.4);
-      }
-
-      input[type="file"] {
-        padding: 10px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
-        cursor: pointer;
-        width: calc(100% - 20px);
-      }
-
-      input[type="file"]::-webkit-file-upload-button {
-        padding: 8px 16px;
-        background: linear-gradient(45deg, #ff4081, #ff1744);
-        color: white;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin-right: 10px;
-      }
-
-      input[type="file"]::-webkit-file-upload-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(255, 23, 68, 0.4);
-      }
-
-      input[type="number"] {
-        -moz-appearance: textfield;
-        -appearance: textfield;
-      }
-
-      input[type="number"]::-webkit-outer-spin-button,
-      input[type="number"]::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-      }
-
-      label {
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 0.95rem;
-        margin-bottom: 4px;
-        display: block;
-      }
-
-      .paint-options,
-      .advanced-options {
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        margin-top: 15px;
-        padding: 15px;
-      }
-
-      .option-group {
-        margin-bottom: 20px;
-        padding: 15px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
-      }
-
-      .option-title {
-        font-size: 1.1rem;
-        color: white;
-        margin-bottom: 10px;
-        font-weight: bold;
-      }
-
-      .option-group:last-child {
-        margin-bottom: 0;
-      }
-
-      .option-description {
-        font-size: 0.9rem;
-        color: rgba(255, 255, 255, 0.7);
-        margin-bottom: 10px;
-        line-height: 1.4;
-      }
-
-      .right-options {
-        background: rgba(0, 0, 0, 0.7);
-        padding: 2rem;
-        border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        backdrop-filter: blur(10px);
-        width: 300px !important;
-        min-width: 300px;
-        max-width: 300px;
-        height: calc(100vh - 40px);
-        overflow-y: auto;
-      }
-
-      #result {
-        display: none;
-        border: 1px solid rgba(255, 64, 129, 0.3);
-        background: rgba(255, 64, 129, 0.1);
-        padding: 15px;
-        margin-top: 20px;
-        border-radius: 8px;
-      }
-
-      .paint-options,
-      .advanced-options {
-        display: none; /* Hide by default */
-      }
-
-      .modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.7);
-        z-index: 1000;
-        overflow-y: auto; /* Enable scrolling */
-      }
-
-      .modal-content {
-        position: relative;
-        background: rgba(0, 0, 0, 0.9);
-        margin: 5% auto; /* Reduced from 15% to 5% */
-        padding: 20px;
-        width: 80%;
-        max-width: 600px;
-        border-radius: 15px;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(10px);
-      }
-
-      .printer-image {
-        width: 80%;
-        height: 80%;
-        object-fit: contain;
-        border-radius: 16px; /* Increased from 8px for more rounded corners */
-        margin-bottom: 20px;
-      }
-
-      .printer-specs {
-        color: white;
-        font-family: "Product Sans", sans-serif;
-      }
-
-      .printer-specs h3 {
-        color: #4caf50;
-        margin-bottom: 15px;
-      }
-
-      .printer-specs ul {
-        list-style-type: none;
-        padding: 0;
-      }
-
-      .printer-specs li {
-        padding: 8px 0;
-        padding-left: 20px;
-        position: relative;
-      }
-
-      .printer-specs li:before {
-        content: "•";
-        color: #4caf50;
-        position: absolute;
-        left: 0;
-      }
-
-      .close-btn {
-        position: absolute;
-        right: 15px;
-        top: 15px;
-        color: white;
-        font-size: 24px;
-        cursor: pointer;
-        background: none;
-        border: none;
-        padding: 5px;
-      }
-    </style>
+    <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <div class="gradient-bg"></div>
@@ -424,16 +38,24 @@
             required
             value="20"
           />
-          <button type="submit">Calculate Estimate</button>
-          <button
-            type="button"
-            id="printerConfigBtn"
-            style="
-              margin-top: 10px;
-              background: linear-gradient(45deg, #4caf50, #45a049);
-            "
-          >
-            Printer Config
+          <label>Quantity</label>
+          <input
+            type="number"
+            name="quantity"
+            id="quantity"
+            placeholder="Enter quantity"
+            min="1"
+            value="1"
+            required
+          />    
+          <div class="discount-display">
+            <label>Discount: (Depends on Quantity)</label>
+            <span id="discountPercentage">0%</span>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="submit">Calculate Estimate</button>
+            <button type="button" id="printerConfigBtn" style="background: linear-gradient(45deg, #4caf50, #45a049);">Printer Config</button>
+        </div>
           </button>
         </form>
         <div id="result"></div>
@@ -775,6 +397,7 @@
                 document.querySelector('input[name="printSpeed"]').value
               ) || 100,
             support: document.getElementById("supportOption").checked,
+            quantity: parseInt(document.getElementById('quantity').value) || 1
           };
 
           // Debug log to verify values
@@ -793,7 +416,8 @@
                 values.wallThickness,
                 values.topBottomLayers,
                 values.printSpeed,
-                values.support
+                values.support,
+                values.quantity
               );
 
               const resultDiv = document.getElementById("result");
@@ -812,33 +436,38 @@
            )}</span>
        </div>
 
-       <div style="margin-bottom: 10px">
+       <div style="margin-bottom: 5px">
            <b>Labor Charge:</b><br>
            ₹${(result.printCost.min * 0.2).toFixed(0)} - ${(
                 result.printCost.max * 0.2
               ).toFixed(0)}
        </div>
 
-       <div style="margin-bottom: 10px">
+       <div style="margin-bottom: 5px">
            <b>Machine Wear:</b><br>
            ₹${(result.printCost.min * 0.2).toFixed(0)} - ${(
                 result.printCost.max * 0.2
               ).toFixed(0)}
        </div>
 
-       <div style="margin-bottom: 10px">
+      <div style="margin-bottom: 5px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.1)">
+          <b>Discount (${result.discountPercentage}%):</b><br>
+          ₹${result.discountAmount.min.toFixed(0)} - ₹${result.discountAmount.max.toFixed(0)}
+      </div>
+
+       <div style="margin-bottom: 5px">
            <b>GST (18%):</b><br>
            ₹${(result.printCost.min * 0.18).toFixed(0)} - ${(
                 result.printCost.max * 0.18
               ).toFixed(0)}
        </div>
 
-       <div style="margin-bottom: 10px">
+       <div style="margin-bottom: 5px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.1)">
            <b>Delivery:</b><br>
            ₹${result.delivery.min} - ${result.delivery.max}
        </div>
 
-       <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1)">
+       <div style="margin-top: 5px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.1)">
            <b>Total Estimate:</b><br>
            Starting ₹${result.total.min.toFixed(
              0
@@ -946,7 +575,8 @@
         wallThickness,
         topBottomLayers,
         printSpeed,
-        support
+        support,
+        quantity
       ) {
         console.log("Calculation inputs:", {
           volume,
@@ -960,6 +590,7 @@
           topBottomLayers,
           printSpeed,
           support,
+          quantity
         });
 
         // Base print time calculation (in hours)
@@ -1037,6 +668,22 @@
           minPrintCost += totalPaintCost;
         }
 
+
+        let discount = 0;
+        if (quantity > 25) {
+          discount = 0.15;
+        } else if (quantity > 10) {
+          discount = 0.125;
+        } else if (quantity > 3) {
+          discount = 0.025;
+        }
+
+        console.log(quantity);
+        console.log(discount);
+
+        let quantityMultiplier = quantity;
+        let discountMultiplier = 1 - discount;
+
         // Add labor charge (20% of print cost)
         let laborCharge = minPrintCost * 0.2;
         minPrintCost += laborCharge;
@@ -1045,12 +692,20 @@
         let wearCharge = minPrintCost * 0.2;
         minPrintCost += wearCharge;
 
+        //Discount
+        minPrintCost = minPrintCost * quantityMultiplier * discountMultiplier;
+
         // Calculate tax (18%) before delivery
         let minTax = minPrintCost * 0.18;
         let maxTax = minPrintCost * 1.2 * 0.18;
 
         // Maximum cost is 20% more than minimum
         let maxPrintCost = minPrintCost * 1.2;
+
+        const discountAmount = {
+          min: minPrintCost * discount,
+          max: maxPrintCost * discount
+        };
 
         // Delivery costs
         const delivery = { min: 60, max: 120 };
@@ -1076,6 +731,8 @@
           printCost: { min: minPrintCost, max: maxPrintCost },
           delivery,
           total,
+          discountAmount,  // Add this
+          discountPercentage: discount * 100  // Add this to show percentage
         };
       }
 
@@ -1102,6 +759,21 @@
         addNumericValidation("printSpeed", 25, 150, 100);
         addNumericValidation("infillPercentage", 0, 100, 20);
       });
+
+      document.getElementById('quantity').addEventListener('change', function() {
+        const quantity = parseInt(this.value) || 1;
+        let discountPercentage = 0;
+
+        if (quantity > 25) {
+          discountPercentage = 15;
+        } else if (quantity > 10) {
+          discountPercentage = 12.5;
+        } else if (quantity > 3) {
+          discountPercentage = 2.5;
+        }
+
+        document.getElementById('discountPercentage').textContent = discountPercentage + '%';
+      });
     </script>
 
     <div id="printerModal" class="modal">
@@ -1112,13 +784,14 @@
           <ul>
             <li>Direct Drive with BLTouch</li>
             <li>
-              Precisely Calibrated for <=0.15mm tolerence and faster print
+              <=0.15mm tolerence
             </li>
-            <li>Running on Klipper on Raspberry PI</li>
-            <li>Tuned for Bed Mesh and Input Shaping & Pressure Advance</li>
+            <li>Uses Klipper on Raspberry PI</li>
+            <li>Faster prints with Bed Mesh, Input Shaping & Pressure Advance</li>
             <li>Upgraded fan ducts and belts</li>
             <li>Patterned PEI texture plate</li>
-            <li>220x220x250 Build Volume</li>
+            <li>200x200x220 mm3 Build Volume</li>
+            <li>Dual-Z for Z-axis accuracy</li>
           </ul>
         </div>
         <img
