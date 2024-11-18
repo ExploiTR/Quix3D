@@ -1,548 +1,778 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Quix 3D - Print Time Estimator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Product+Sans&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Product+Sans&display=swap"
+      rel="stylesheet"
+    />
     <!-- In the head section, replace the existing Three.js related scripts with these -->
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: 'Product Sans', sans-serif;
-            color: white;
-            overflow: hidden;
-            background: #1a1a1a;
-        }
-        
-        .gradient-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(-45deg, #1a1a1a, #2d2d2d, #1f1f1f, #2a2a2a);
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
-            z-index: -1;
-        }
-        
-        @keyframes gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        .content {
-            position: relative;
-            height: 100vh;
-            display: flex;
-            gap: 20px;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        
-        .container {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            width: 400px !important;
-            min-width: 400px;
-            max-width: 400px;
-            height: calc(100vh - 40px);
-            overflow-y: auto;
-            transition: all 0.3s ease;
-        }
-        
-        #stlViewer {
-            flex: 1;
-            max-width: calc(100% - 440px);
-            height: calc(100vh - 40px);
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 15px;
-            overflow: hidden;
-        }
-        
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1.5rem;
-            text-align: center;
-            color: white;
-            font-weight: 500;
-            letter-spacing: -0.5px;
-        }
-        
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        
-        input, select {
-            padding: 12px;
-            font-size: 1rem;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
-            transition: all 0.3s ease;
-        }
-        
-        input:focus, select:focus {
-            outline: none;
-            border-color: #FF4081;
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
-        input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-        
-        select option {
-            background: #2a2a2a;
-            color: white;
-        }
-        
-        .checkbox-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 0;
-        }
-        
-        input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-        
-        .paint-options, .advanced-options {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-        
-        #result {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            font-size: 1.1rem;
-            line-height: 1.5;
-        }
-        
-        .container::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        .container::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 4px;
-        }
-        
-        .container::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-        }
-        
-        .container::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-        
-        button {
-            padding: 12px 24px;
-            background: linear-gradient(45deg, #FF4081, #FF1744);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 23, 68, 0.4);
-        }
-        
-        input[type="file"] {
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            cursor: pointer;
-            width: calc(100% - 20px);
-        }
-        
-        input[type="file"]::-webkit-file-upload-button {
-            padding: 8px 16px;
-            background: linear-gradient(45deg, #FF4081, #FF1744);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-right: 10px;
-        }
-        
-        input[type="file"]::-webkit-file-upload-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 23, 68, 0.4);
-        }
-        
-        input[type="number"] {
-            -moz-appearance: textfield;
-            -appearance: textfield;
-        }
-        
-        input[type="number"]::-webkit-outer-spin-button,
-        input[type="number"]::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        
-        label {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.95rem;
-            margin-bottom: 4px;
-            display: block;
-        }
-        
-        .paint-options, .advanced-options {
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-top: 15px;
-            padding: 15px;
-        }
-        
-        .option-group {
-            margin-bottom: 15px;
-        }
-        
-        .option-group:last-child {
-            margin-bottom: 0;
-        }
-        
-        #result {
-            border: 1px solid rgba(255, 64, 129, 0.3);
-            background: rgba(255, 64, 129, 0.1);
-            padding: 15px;
-            margin-top: 20px;
-            border-radius: 8px;
-        }
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: "Product Sans", sans-serif;
+        color: white;
+        overflow: hidden;
+        background: #1a1a1a;
+      }
 
-        .paint-options, .advanced-options {
-            display: none;  /* Hide by default */
+      .gradient-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(-45deg, #1a1a1a, #2d2d2d, #1f1f1f, #2a2a2a);
+        background-size: 400% 400%;
+        animation: gradient 15s ease infinite;
+        z-index: -1;
+      }
+
+      @keyframes gradient {
+        0% {
+          background-position: 0% 50%;
         }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      .content {
+        position: relative;
+        height: 100vh;
+        display: flex;
+        gap: 20px;
+        padding: 20px;
+        box-sizing: border-box;
+        justify-content: center;
+      }
+
+      .container {
+        background: rgba(0, 0, 0, 0.7);
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        width: 300px !important;
+        min-width: 300px;
+        max-width: 300px;
+        height: calc(100vh - 40px);
+        overflow-y: auto;
+      }
+
+      #stlViewer {
+        flex: 1;
+        max-width: calc(100% - 440px);
+        height: calc(100vh - 40px);
+        background: rgba(0, 0, 0, 0.7);
+        border-radius: 15px;
+        overflow: hidden;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+        color: white;
+        font-weight: 500;
+        letter-spacing: -0.5px;
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      input,
+      select {
+        padding: 12px;
+        font-size: 1rem;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        color: white;
+        transition: all 0.3s ease;
+      }
+
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: #ff4081;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      select option {
+        background: #2a2a2a;
+        color: white;
+      }
+
+      .checkbox-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 0;
+      }
+
+      input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+
+      .paint-options,
+      .advanced-options {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 10px;
+      }
+
+      .container::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .container::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+      }
+
+      .container::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+      }
+
+      .container::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      button {
+        padding: 12px 24px;
+        background: linear-gradient(45deg, #ff4081, #ff1744);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 23, 68, 0.4);
+      }
+
+      input[type="file"] {
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        cursor: pointer;
+        width: calc(100% - 20px);
+      }
+
+      input[type="file"]::-webkit-file-upload-button {
+        padding: 8px 16px;
+        background: linear-gradient(45deg, #ff4081, #ff1744);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-right: 10px;
+      }
+
+      input[type="file"]::-webkit-file-upload-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 23, 68, 0.4);
+      }
+
+      input[type="number"] {
+        -moz-appearance: textfield;
+        -appearance: textfield;
+      }
+
+      input[type="number"]::-webkit-outer-spin-button,
+      input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+      label {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.95rem;
+        margin-bottom: 4px;
+        display: block;
+      }
+
+      .paint-options,
+      .advanced-options {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin-top: 15px;
+        padding: 15px;
+      }
+
+      .option-group {
+        margin-bottom: 20px;
+        padding: 15px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+      }
+
+      .option-title {
+        font-size: 1.1rem;
+        color: white;
+        margin-bottom: 10px;
+        font-weight: bold;
+      }
+
+      .option-group:last-child {
+        margin-bottom: 0;
+      }
+
+      .option-description {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 10px;
+        line-height: 1.4;
+      }
+
+      .right-options {
+        background: rgba(0, 0, 0, 0.7);
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        width: 300px !important;
+        min-width: 300px;
+        max-width: 300px;
+        height: calc(100vh - 40px);
+        overflow-y: auto;
+      }
+
+      #result {
+        display: none;
+        border: 1px solid rgba(255, 64, 129, 0.3);
+        background: rgba(255, 64, 129, 0.1);
+        padding: 15px;
+        margin-top: 20px;
+        border-radius: 8px;
+      }
+
+      .paint-options,
+      .advanced-options {
+        display: none; /* Hide by default */
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="gradient-bg"></div>
     <div class="content">
-        <div class="container">
-            <h1>3D Print Time Estimator</h1>
-            <form id="estimateForm">
-                               <input type="file" accept=".stl" required id="stlFile">
-                <select name="quality" required>
-                    <option value="">Select Quality</option>
-                    <option value="high">High Quality (Slower)</option>
-                    <option value="medium">Medium Quality</option>
-                    <option value="low">Low Quality (Faster)</option>
-                </select>
-                <input type="number" name="infillPercentage" placeholder="Infill Percentage" min="0" max="100" required>
-                <div>
-                    <input type="checkbox" id="paintOption" name="paintOption">
-                    <label for="paintOption">Spray Paint</label>
-                </div>
-                <div class="paint-options">
-                    <select name="paintColor">
-                        <option value="">Select Color</option>
-                        <option value="golden">Golden</option>
-                        <option value="silver">Silver</option>
-                        <option value="white">White</option>
-                        <option value="blue">Blue</option>
-                        <option value="red">Red</option>
-                        <option value="green">Green</option>
-                        <option value="black">Black</option>
-                    </select>
-                    <input type="checkbox" id="primerOption" name="primerOption">
-                    <label for="primerOption">Add Primer</label>
-                    <input type="number" name="coats" placeholder="Number of Coats" min="1" max="5">
-                </div>
-                <div>
-                    <input type="checkbox" id="advancedOption" name="advancedOption">
-                    <label for="advancedOption">Advanced Options</label>
-                </div>
-                <div class="advanced-options">
-                    <input type="number" name="layerHeight" placeholder="Layer Height (mm)" step="0.01" min="0.1" max="0.4">
-                    <input type="number" name="wallThickness" placeholder="Wall Thickness (mm)" step="0.1" min="0.4" max="2">
-                    <input type="number" name="topBottomLayers" placeholder="Top/Bottom Layers" min="1" max="10">
-                    <input type="number" name="printSpeed" placeholder="Print Speed (mm/s)" min="10" max="150">
-                    <input type="number" name="retraction" placeholder="Retraction Distance (mm)" step="0.1" min="0" max="10">
-                    <input type="number" name="supportDensity" placeholder="Support Density (%)" min="0" max="100">
-                </div>
-                <button type="submit">Calculate Estimate</button>
-            </form>
-            <div id="result"></div>
+      <div class="container">
+        <h1>3D Print Time Estimator</h1>
+        <form id="estimateForm">
+          <input type="file" accept=".stl" required id="stlFile" />
+          <select name="quality" required>
+            <option value="">Select Quality</option>
+            <option value="high" selected>High Quality (Slower)</option>
+            <option value="medium">Medium Quality</option>
+            <option value="low">Low Quality (Faster)</option>
+          </select>
+          <input
+            type="number"
+            name="infillPercentage"
+            placeholder="Infill Percentage"
+            min="0"
+            max="100"
+            required
+            value="20"
+          />
+          <button type="submit">Calculate Estimate</button>
+        </form>
+        <div id="result"></div>
+      </div>
+
+      <div id="stlViewer"></div>
+
+      <div class="right-options">
+        <div class="option-group">
+          <div class="option-title">Spray Paint Options</div>
+          <div class="option-description">
+            Enhance your print with professional spray painting. Choose colors
+            and add primer for better adhesion and finish quality.
+          </div>
+          <div class="checkbox-container">
+            <input type="checkbox" id="paintOption" name="paintOption" />
+            <label for="paintOption">Enable Spray Paint</label>
+          </div>
+          <div class="paint-options">
+            <label>Paint Color</label>
+            <select name="paintColor">
+              <option value="golden" selected>Golden</option>
+              <option value="silver">Silver</option>
+              <option value="white">White</option>
+              <option value="blue">Blue</option>
+              <option value="red">Red</option>
+              <option value="green">Green</option>
+              <option value="black">Black</option>
+            </select>
+
+            <label>Number of Coats</label>
+            <input type="number" name="coats" value="2" min="1" max="5" />
+
+            <div class="checkbox-container">
+              <input type="checkbox" id="primerOption" name="primerOption" />
+              <label for="primerOption">Add Primer</label>
+            </div>
+          </div>
         </div>
-        <div id="stlViewer"></div>
+
+        <div class="option-group">
+          <div class="option-title">Advanced Print Settings</div>
+          <div class="option-description">
+            Fine-tune your print quality and strength with these advanced
+            settings. Default values are optimized for most prints.
+          </div>
+          <div class="checkbox-container">
+            <input type="checkbox" id="advancedOption" name="advancedOption" />
+            <label for="advancedOption">Enable Advanced Options</label>
+          </div>
+          <div class="advanced-options">
+            <label>Layer Height (mm)</label>
+            <input
+              type="number"
+              name="layerHeight"
+              value="0.2"
+              step="0.01"
+              min="0.1"
+              max="0.4"
+            />
+
+            <label>Wall Thickness (mm)</label>
+            <input
+              type="number"
+              name="wallThickness"
+              value="0.8"
+              step="0.1"
+              min="0.4"
+              max="2"
+            />
+
+            <label>Top/Bottom Layers</label>
+            <input
+              type="number"
+              name="topBottomLayers"
+              value="2"
+              min="1"
+              max="10"
+            />
+
+            <label>Print Speed (mm/s)</label>
+            <input
+              type="number"
+              name="printSpeed"
+              value="100"
+              min="10"
+              max="150"
+            />
+
+            <div class="checkbox-container">
+              <input
+                type="checkbox"
+                id="supportOption"
+                name="supportOption"
+                checked
+              />
+              <label for="supportOption">Enable Support</label>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
-        let scene, camera, renderer, object, controls, animationId;
+      let scene, camera, renderer, object, controls, animationId;
 
-        document.getElementById('stlFile').addEventListener('change', function(event) {
-            console.log('File selected');
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        console.log('File loaded, parsing STL');
-                        const geometry = new THREE.STLLoader().parse(e.target.result);
-                        console.log('STL parsed successfully');
-                        displaySTL(geometry);
-                    } catch (error) {
-                        console.error('Error parsing STL file:', error);
-                        alert('Error parsing STL file. Please check the console for details.');
-                    }
-                };
-                reader.onerror = function(e) {
-                    console.error('Error reading file:', e);
-                    alert('Error reading file. Please try again.');
-                };
-                reader.readAsArrayBuffer(file);
-            }
-        });
-
-        function displaySTL(geometry) {
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-            }
-        
-            if (!scene) {
-                scene = new THREE.Scene();
-                const aspect = window.innerWidth / window.innerHeight;
-                camera = new THREE.OrthographicCamera(
-                    -10 * aspect, 10 * aspect,  
-                    10, -10,                    
-                    0.1, 1000                   
+      document
+        .getElementById("stlFile")
+        .addEventListener("change", function (event) {
+          console.log("File selected");
+          const file = event.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              try {
+                console.log("File loaded, parsing STL");
+                const geometry = new THREE.STLLoader().parse(e.target.result);
+                console.log("STL parsed successfully");
+                displaySTL(geometry);
+              } catch (error) {
+                console.error("Error parsing STL file:", error);
+                alert(
+                  "Error parsing STL file. Please check the console for details."
                 );
-                renderer = new THREE.WebGLRenderer({ antialias: true });
-                renderer.setSize(window.innerWidth / 2, window.innerHeight);
-                renderer.setClearColor(0x000000, 0);
-                document.getElementById('stlViewer').appendChild(renderer.domElement);
-            
-                controls = new THREE.OrbitControls(camera, renderer.domElement);
-                if (controls) {
-                    controls.enableDamping = true;
-                    controls.dampingFactor = 0.05;
-                    controls.screenSpacePanning = false;
-                    controls.minDistance = 1;
-                    controls.maxDistance = 500;
-                    controls.maxPolarAngle = Math.PI;
-                }
-            }
-        
-            if (object) {
-                scene.remove(object);
-            }
-        
-            geometry.center();
-        
-            const material = new THREE.MeshStandardMaterial({
-                color: 0x808080,
-                roughness: 0.7,
-                metalness: 0.1,
+              }
+            };
+            reader.onerror = function (e) {
+              console.error("Error reading file:", e);
+              alert("Error reading file. Please try again.");
+            };
+            reader.readAsArrayBuffer(file);
+          }
+        });
+
+      function formatTime(hours) {
+        const h = Math.floor(hours);
+        const m = Math.floor((hours - h) * 60);
+        const s = Math.floor(((hours - h) * 60 - m) * 60);
+
+        let result = [];
+        if (h > 0) result.push(`${h}hr`);
+        if (m > 0) result.push(`${m}min`);
+        if (s > 0) result.push(`${s}sec`);
+        return result.join(" ");
+      }
+
+      function displaySTL(geometry) {
+        if (animationId) {
+          cancelAnimationFrame(animationId);
+        }
+
+        if (!scene) {
+          scene = new THREE.Scene();
+          const aspect = window.innerWidth / window.innerHeight;
+          camera = new THREE.OrthographicCamera(
+            -10 * aspect,
+            10 * aspect,
+            10,
+            -10,
+            0.1,
+            1000
+          );
+          renderer = new THREE.WebGLRenderer({ antialias: true });
+          renderer.setSize(window.innerWidth / 2, window.innerHeight);
+          renderer.setClearColor(0x000000, 0);
+          document.getElementById("stlViewer").appendChild(renderer.domElement);
+
+          controls = new THREE.OrbitControls(camera, renderer.domElement);
+          if (controls) {
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false;
+            controls.minDistance = 1;
+            controls.maxDistance = 500;
+            controls.maxPolarAngle = Math.PI;
+          }
+        }
+
+        if (object) {
+          scene.remove(object);
+        }
+
+        geometry.center();
+
+        const material = new THREE.MeshStandardMaterial({
+          color: 0x808080,
+          roughness: 0.7,
+          metalness: 0.1,
+        });
+
+        object = new THREE.Mesh(geometry, material);
+
+        scene.clear();
+        scene.add(object);
+
+        object.updateMatrix();
+
+        const box = new THREE.Box3().setFromObject(object);
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+
+        const zoom = 2;
+        camera.left = -maxDim * zoom;
+        camera.right = maxDim * zoom;
+        camera.top = maxDim * zoom;
+        camera.bottom = -maxDim * zoom;
+        camera.near = -1000;
+        camera.far = 1000;
+        camera.position.set(maxDim, maxDim, maxDim);
+        camera.lookAt(0, 0, 0);
+        camera.updateProjectionMatrix();
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const frontLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        frontLight.position.set(0, 0, 1);
+        scene.add(frontLight);
+
+        const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        backLight.position.set(0, 0, -1);
+        scene.add(backLight);
+
+        const topLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        topLight.position.set(0, 1, 0);
+        scene.add(topLight);
+
+        if (controls) {
+          controls.target.set(0, 0, 0);
+          controls.update();
+        }
+
+        function animate() {
+          animationId = requestAnimationFrame(animate);
+          if (controls && typeof controls.update === "function") {
+            controls.update();
+          }
+          if (renderer && scene && camera) {
+            renderer.render(scene, camera);
+          }
+        }
+
+        animate();
+
+        document.querySelector(".container").style.width = "40%";
+        document.getElementById("stlViewer").style.display = "block";
+      }
+      // Add window resize handler
+      window.addEventListener("resize", function () {
+        if (camera && renderer) {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth / 2, window.innerHeight);
+        }
+      });
+
+      document
+        .getElementById("paintOption")
+        .addEventListener("change", function (event) {
+          document.querySelector(".paint-options").style.display = event.target
+            .checked
+            ? "block"
+            : "none";
+        });
+
+      document
+        .getElementById("advancedOption")
+        .addEventListener("change", function (event) {
+          document.querySelector(".advanced-options").style.display = event
+            .target.checked
+            ? "block"
+            : "none";
+        });
+
+      document
+        .getElementById("estimateForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          const formData = new FormData(this);
+          const file = document.getElementById("stlFile").files[0];
+
+          if (!file) {
+            alert("Please select an STL file");
+            return;
+          }
+
+          // Log all values to debug
+          console.log({
+            quality: formData.get("quality"),
+            infill: formData.get("infillPercentage"),
+            paintOption: document.getElementById("paintOption").checked,
+            coats: formData.get("coats"),
+            layerHeight: formData.get("layerHeight"),
+            wallThickness: formData.get("wallThickness"),
+            topBottomLayers: formData.get("topBottomLayers"),
+            printSpeed: formData.get("printSpeed"),
+            support: document.getElementById("supportOption").checked, // Let's check this value
+          });
+
+          calculateVolume(file)
+            .then((volume) => {
+              const result = estimateCostAndTime(
+                volume,
+                formData.get("quality"),
+                parseFloat(formData.get("infillPercentage")) || 20,
+                document.getElementById("paintOption").checked,
+                parseInt(formData.get("coats")) || 2,
+                document.getElementById("primerOption").checked,
+                parseFloat(formData.get("layerHeight")) || 0.2,
+                parseFloat(formData.get("wallThickness")) || 0.8,
+                parseInt(formData.get("topBottomLayers")) || 2,
+                parseInt(formData.get("printSpeed")) || 100,
+                document.getElementById("supportOption").checked
+              );
+
+              const resultDiv = document.getElementById("result");
+              resultDiv.style.display = "block";
+              resultDiv.innerHTML = `
+   <div style="font-size: 1.1rem; margin-bottom: 15px;">
+       <b>Print Duration:</b> ${formatTime(result.printTime)}
+   </div>
+
+   <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
+       <div style="margin-bottom: 10px">
+           <b>Base Print Cost:</b><br>
+           Starting from ₹${result.printCost.min.toFixed(0)}
+           <span style="color: #888"> up to ₹${result.printCost.max.toFixed(
+             0
+           )}</span>
+       </div>
+
+       <div style="margin-bottom: 10px">
+           <b>Delivery:</b><br>
+           ₹${result.delivery.min} - ${result.delivery.max}
+       </div>
+
+       <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1)">
+           <b>Total Estimate:</b><br>
+           ₹${result.total.min.toFixed(0)} - ${result.total.max.toFixed(0)}
+       </div>
+   </div>
+`;
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              alert("Error calculating. Please try again.");
             });
-            
-            object = new THREE.Mesh(geometry, material);
-            
-            scene.clear();
-            scene.add(object);
-        
-            object.updateMatrix();
-        
-            const box = new THREE.Box3().setFromObject(object);
-            const size = box.getSize(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z);
-        
-            const zoom = 2;
-            camera.left = -maxDim * zoom;
-            camera.right = maxDim * zoom;
-            camera.top = maxDim * zoom;
-            camera.bottom = -maxDim * zoom;
-            camera.near = -1000;
-            camera.far = 1000;
-            camera.position.set(maxDim, maxDim, maxDim);
-            camera.lookAt(0, 0, 0);
-            camera.updateProjectionMatrix();
-        
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambientLight);
-        
-            const frontLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            frontLight.position.set(0, 0, 1);
-            scene.add(frontLight);
-        
-            const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
-            backLight.position.set(0, 0, -1);
-            scene.add(backLight);
-        
-            const topLight = new THREE.DirectionalLight(0xffffff, 0.3);
-            topLight.position.set(0, 1, 0);
-            scene.add(topLight);
-        
-            if (controls) {
-                controls.target.set(0, 0, 0);
-                controls.update();
-            }
-        
-            function animate() {
-                animationId = requestAnimationFrame(animate);
-                if (controls && typeof controls.update === 'function') {
-                    controls.update();
-                }
-                if (renderer && scene && camera) {
-                    renderer.render(scene, camera);
-                }
-            }
-        
-            animate();
-        
-            document.querySelector('.container').style.width = '40%';
-            document.getElementById('stlViewer').style.display = 'block';
-        }
-        // Add window resize handler
-        window.addEventListener('resize', function() {
-            if (camera && renderer) {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth / 2, window.innerHeight);
-            }
-        });
-        
-        document.getElementById('paintOption').addEventListener('change', function(event) {
-            document.querySelector('.paint-options').style.display = event.target.checked ? 'block' : 'none';
         });
 
-        document.getElementById('advancedOption').addEventListener('change', function(event) {
-            document.querySelector('.advanced-options').style.display = event.target.checked ? 'block' : 'none';
+      document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("result").style.display = "none";
+      });
+
+      function calculateVolume(file) {
+        console.log("Calculating volume");
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            try {
+              const geometry = new THREE.STLLoader().parse(e.target.result);
+              const volume = getVolume(geometry);
+              resolve(volume);
+            } catch (error) {
+              reject(error);
+            }
+          };
+          reader.onerror = reject;
+          reader.readAsArrayBuffer(file);
         });
+      }
 
-        document.getElementById('estimateForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            console.log('Form submitted');
-            const formData = new FormData(this);
-            const file = document.getElementById('stlFile').files[0];
-            if (!file) {
-                console.error('No file selected');
-                alert('Please select an STL file');
-                return;
-            }
-            const quality = formData.get('quality');
-            const infillPercentage = parseFloat(formData.get('infillPercentage'));
-            const paintOption = formData.get('paintOption') === 'on';
-            const paintColor = formData.get('paintColor');
-            const primerOption = formData.get('primerOption') === 'on';
-            const coats = parseInt(formData.get('coats') || '0');
+      function getVolume(geometry) {
+        let volume = 0;
+        const positions = geometry.attributes.position.array;
+        for (let i = 0; i < positions.length; i += 9) {
+          const t1x = positions[i],
+            t1y = positions[i + 1],
+            t1z = positions[i + 2];
+          const t2x = positions[i + 3],
+            t2y = positions[i + 4],
+            t2z = positions[i + 5];
+          const t3x = positions[i + 6],
+            t3y = positions[i + 7],
+            t3z = positions[i + 8];
+          volume += signedVolumeOfTriangle(
+            t1x,
+            t1y,
+            t1z,
+            t2x,
+            t2y,
+            t2z,
+            t3x,
+            t3y,
+            t3z
+          );
+        }
+        return Math.abs(volume) / 1000; // Convert to cm³
+      }
 
-            // Advanced options
-            const layerHeight = parseFloat(formData.get('layerHeight') || '0.2');
-            const wallThickness = parseFloat(formData.get('wallThickness') || '0.8');
-            const topBottomLayers = parseInt(formData.get('topBottomLayers') || '3');
-            const printSpeed = parseInt(formData.get('printSpeed') || '60');
-            const retraction = parseFloat(formData.get('retraction') || '5');
-            const supportDensity = parseInt(formData.get('supportDensity') || '20');
+      function signedVolumeOfTriangle(x1, y1, z1, x2, y2, z2, x3, y3, z3) {
+        return (
+          (1.0 / 6.0) *
+          (-x3 * y2 * z1 +
+            x2 * y3 * z1 +
+            x3 * y1 * z2 -
+            x1 * y3 * z2 -
+            x2 * y1 * z3 +
+            x1 * y2 * z3)
+        );
+      }
 
-            calculateVolume(file).then(volume => {
-                console.log('Volume calculated:', volume);
-                const { minCost, maxCost, printTime } = estimateCostAndTime(volume, quality, infillPercentage, paintOption, coats, layerHeight, wallThickness, topBottomLayers, printSpeed, retraction, supportDensity);
+      function estimateCostAndTime(
+        volume,
+        quality,
+        infillPercentage,
+        paintOption,
+        coats,
+        primer,
+        layerHeight,
+        wallThickness,
+        topBottomLayers,
+        printSpeed,
+        support
+      ) {
+        // Base print time calculation
+        let printTime = volume * 0.0735;
 
-                let resultText = `Estimated print time: ${printTime.toFixed(2)} hours<br>`;
-                resultText += `Estimated cost range: ₹${minCost.toFixed(2)} - ₹${maxCost.toFixed(2)}<br>`;
-                resultText += "Please request a quote with the file for an exact price.";
+        // Quality adjustments
+        let qualityMultipliers = {
+          high: { time: 1.2, cost: 1.15 },
+          medium: { time: 1.1, cost: 1.1 },
+          low: { time: 1, cost: 1 },
+        };
 
-                document.getElementById('result').innerHTML = resultText;
-            }).catch(error => {
-                console.error('Error calculating volume:', error);
-                alert('Error calculating volume. Please check the console for details.');
-            });
-        });
+        printTime *= qualityMultipliers[quality].time;
 
-        function calculateVolume(file) {
-            console.log('Calculating volume');
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const geometry = new THREE.STLLoader().parse(e.target.result);
-                        const volume = getVolume(geometry);
-                        resolve(volume);
-                    } catch (error) {
-                        reject(error);
-                    }
-                };
-                reader.onerror = reject;
-                reader.readAsArrayBuffer(file);
-            });
+        // Support, layer height, speed and infill adjustments
+        if (support) printTime *= 1.3;
+        printTime *= 0.2 / layerHeight;
+        printTime *= 50 / printSpeed;
+        printTime *= infillPercentage / 20;
+
+        // Speed adjustment (20 = base speed, 100 = 5% faster)
+        printTime *= 1 - ((printSpeed - 20) / 80) * 0.05;
+
+        // Base print cost (₹15 for 15.55 cm³)
+        let basePrintCost = volume * 0.965;
+        let minPrintCost = basePrintCost * qualityMultipliers[quality].cost;
+        let maxPrintCost = minPrintCost * 1.2;
+
+        // Paint costs
+        if (paintOption) {
+          const paintCost =
+            Math.min(Math.max(volume / 10, 10), 100) * coats + (coats - 1) * 10;
+          if (primer) minPrintCost += 20;
+          minPrintCost += paintCost;
+          maxPrintCost += paintCost;
         }
 
-		function getVolume(geometry) {
-            let volume = 0;
-            const positions = geometry.attributes.position.array;
-            for (let i = 0; i < positions.length; i += 9) {
-                const t1x = positions[i], t1y = positions[i + 1], t1z = positions[i + 2];
-                const t2x = positions[i + 3], t2y = positions[i + 4], t2z = positions[i + 5];
-                const t3x = positions[i + 6], t3y = positions[i + 7], t3z = positions[i + 8];
-                volume += signedVolumeOfTriangle(t1x, t1y, t1z, t2x, t2y, t2z, t3x, t3y, t3z);
-            }
-            return Math.abs(volume) / 1000; // Convert to cm³
-        }
+        const delivery = { min: 60, max: 120 };
 
-        function signedVolumeOfTriangle(x1, y1, z1, x2, y2, z2, x3, y3, z3) {
-            return 1.0 / 6.0 * (-x3 * y2 * z1 + x2 * y3 * z1 + x3 * y1 * z2 - x1 * y3 * z2 - x2 * y1 * z3 + x1 * y2 * z3);
-        }
-
-        function estimateCostAndTime(volume, quality, infillPercentage, paintOption, coats, layerHeight, wallThickness, topBottomLayers, printSpeed, retraction, supportDensity) {
-			console.log('Estimating cost and time');
-            const materialCostPerKg = { min: 900, max: 1000 };
-            const electricityCostPerHour = 3.5;
-            const printerRentPerHour = { min: 10, max: 20 };
-            const deliveryCharge = { min: 30, max: 100 };
-
-            let adjustedPrintSpeed = printSpeed;
-            switch (quality) {
-                case 'high': adjustedPrintSpeed = Math.min(printSpeed, 40); break;
-                case 'medium': adjustedPrintSpeed = Math.min(printSpeed, 70); break;
-                case 'low': adjustedPrintSpeed = Math.min(printSpeed, 100); break;
-            }
-
-            const printTime = (volume / 16) * (0.2 / layerHeight) * (50 / adjustedPrintSpeed) * (infillPercentage / 20) * (1 + supportDensity / 100);
-
-            const materialCost = (volume / 1000) * materialCostPerKg.min;
-            const electricityCost = printTime * electricityCostPerHour;
-            const printerRentCost = printTime * printerRentPerHour.min;
-
-            let paintCost = 0;
-            if (paintOption) {
-                paintCost = Math.min(Math.max(volume / 10, 10), 100) * coats;
-            }
-
-            const minCost = materialCost + electricityCost + printerRentCost + paintCost + deliveryCharge.min;
-            const maxCost = (volume / 1000) * materialCostPerKg.max + electricityCost + (printTime * printerRentPerHour.max) + paintCost + deliveryCharge.max;
-			
-			console.log('Estimated cost and time');
-
-            return { minCost, maxCost, printTime };
-        }
+        return {
+          printTime,
+          printCost: { min: minPrintCost, max: maxPrintCost },
+          delivery,
+          total: {
+            min: minPrintCost + delivery.min,
+            max: maxPrintCost + delivery.max,
+          },
+        };
+      }
     </script>
-</body>
+  </body>
 </html>
