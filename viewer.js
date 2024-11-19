@@ -22,17 +22,19 @@ function displaySTL(geometry) {
         scene = new THREE.Scene();
         const aspect = 1;//window.innerWidth / window.innerHeight;
 
-        scene.background = new THREE.Color(0x000000);
-        scene.fog = new THREE.Fog(0x000000, 100, 200);
+       // scene.background = new THREE.Color(0x000000);
+       // scene.fog = new THREE.Fog(0x000000, 100, 200);
 
-        camera = new THREE.OrthographicCamera(
-            -10 * aspect,
-            10 * aspect,
-            10,
-            -10,
-            0.1,
-            1000
-        );
+       const frustumSize = 200;  // Adjust this value to control initial zoom
+       camera = new THREE.OrthographicCamera(
+           -frustumSize,
+           frustumSize,
+           frustumSize,
+           -frustumSize,
+           0.1,
+           2000
+       );
+
         renderer = new THREE.WebGLRenderer({
             antialias: true,
             powerPreference: "high-performance",
@@ -46,14 +48,15 @@ function displaySTL(geometry) {
         const viewerWidth = stlViewer.clientWidth;
 
         renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(viewerWidth, viewerHeight);
-        renderer.setClearColor(0x000000, 0);
         renderer.physicallyCorrectLights = true;
         renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1;
+
+        renderer.setSize(viewerWidth, viewerHeight);
+        renderer.setClearColor(0x000000, 0);
 
         document.getElementById("stlViewer").appendChild(renderer.domElement);
 
@@ -65,18 +68,9 @@ function displaySTL(geometry) {
         scene.remove(object);
     }
 
-    geometry.center();
-    const material = new THREE.MeshStandardMaterial({
-        color: 0x808080,
-        roughness: 0.7,
-        metalness: 0.1,
-    });
-
-    object = new THREE.Mesh(geometry, material);
-    scene.clear();
-    scene.add(object);
-    setupLighting();
-    setupCamera();
+    setupEnhancedModel(geometry);
+    setupEnhancedLighting();
+    setupEnhancedCamera();
     animate();
 
     document.querySelector(".container").style.width = "40%";
@@ -86,13 +80,116 @@ function displaySTL(geometry) {
     setTimeout(resizeSTLViewer, 100);
 }
 
+function setupEnhancedModel(geometry) {
+    if (object) {
+        scene.remove(object);
+    }
+
+    geometry.center();
+    geometry.computeVertexNormals();
+
+    // More realistic material settings
+    const material = new THREE.MeshStandardMaterial({
+        color: 0xcccccc,    // Light grey
+        metalness: 0.3,     // Less metallic for more natural look
+        roughness: 0.4,     // Moderate roughness
+        envMapIntensity: 1,
+        flatShading: false,
+        side: THREE.DoubleSide
+    });
+
+    object = new THREE.Mesh(geometry, material);
+    object.castShadow = true;
+    object.receiveShadow = true;
+
+    // Optional: Add environment map for better reflections
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+    
+    // Create a simple environment map
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    const envScene = new THREE.Scene();
+    envScene.add(ambientLight);
+    const envMap = pmremGenerator.fromScene(envScene).texture;
+    material.envMap = envMap;
+
+    scene.add(object);
+}
+
+function setupEnhancedLighting() {
+    // Clear any existing lights
+    scene.clear();
+
+    // Add object back if it exists
+    if (object) scene.add(object);
+
+    // Key Light (main light)
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    keyLight.position.set(-2, 2, 2);
+    keyLight.castShadow = true;
+    scene.add(keyLight);
+
+    // Fill Light (softer light from opposite side)
+    const fillLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    fillLight.position.set(2, -1, -1);
+    scene.add(fillLight);
+
+    // Top Light
+    const topLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    topLight.position.set(0, 4, 0);
+    scene.add(topLight);
+
+    // Ambient light for overall illumination
+    const ambientLight = new THREE.HemisphereLight(
+        0xffffff, // Sky color
+        0x444444, // Ground color
+        1.0       // Intensity
+    );
+    scene.add(ambientLight);
+
+    // Add some point lights for specular highlights
+    const pointLight1 = new THREE.PointLight(0xffffff, 0.5);
+    pointLight1.position.set(2, 2, 2);
+    scene.add(pointLight1);
+
+    const pointLight2 = new THREE.PointLight(0xffffff, 0.3);
+    pointLight2.position.set(-2, -2, -2);
+    scene.add(pointLight2);
+}
+
+function setupEnhancedCamera() {
+    const box = new THREE.Box3().setFromObject(object);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+
+    // Position camera much further back
+    camera.position.set(
+        maxDim * 4.5,  // Increased distance
+        maxDim * 4.5,  // Increased distance
+        maxDim * 4.5   // Increased distance
+    );
+    camera.lookAt(center);
+    controls.target.copy(center);
+
+    // Adjust camera properties for better view
+    camera.near = maxDim / 100;
+    camera.far = maxDim * 100;
+    camera.updateProjectionMatrix();
+
+    // Adjust control limits
+    controls.minDistance = maxDim * 1.5;  // Don't allow too close
+    controls.maxDistance = maxDim * 10;   // Don't allow too far
+    controls.update();
+}
+
 function initializeControls() {
     if (controls) {
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         controls.screenSpacePanning = true;
-        controls.minDistance = 10;
-        controls.maxDistance = 5000;
+        controls.minDistance = 1;
+        controls.maxDistance = 500;
         controls.maxPolarAngle = Infinity;
         controls.minPolarAngle = -Infinity;
         controls.enableRotate = true;
@@ -177,13 +274,21 @@ function throttle(func, limit) {
     }
 }
 
-window.addEventListener('resize', throttle(function () {
+const resizeObserver = new ResizeObserver(throttle(() => {
+    const viewer = document.getElementById("stlViewer");
+    const height = viewer.clientHeight;
+    viewer.style.width = height + "px";
+    
     if (camera && renderer) {
-        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.aspect = 1;
         camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth / 2, window.innerHeight);
+        renderer.setSize(height, height);
     }
 }, 100));
 
-window.addEventListener("resize", resizeSTLViewer);
+document.getElementById("stlViewer").addEventListener('DOMContentLoaded', () => {
+    resizeObserver.observe(document.getElementById("stlViewer"));
+});
+
+
 window.addEventListener("load", resizeSTLViewer);
