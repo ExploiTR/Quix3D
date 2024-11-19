@@ -20,7 +20,11 @@ function displaySTL(geometry) {
 
     if (!scene) {
         scene = new THREE.Scene();
-        const aspect = window.innerWidth / window.innerHeight;
+        const aspect = 1;//window.innerWidth / window.innerHeight;
+
+        scene.background = new THREE.Color(0x000000);
+        scene.fog = new THREE.Fog(0x000000, 100, 200);
+
         camera = new THREE.OrthographicCamera(
             -10 * aspect,
             10 * aspect,
@@ -32,7 +36,9 @@ function displaySTL(geometry) {
         renderer = new THREE.WebGLRenderer({
             antialias: true,
             powerPreference: "high-performance",
-            precision: "mediump"
+            precision: "highp",
+            alpha: true,
+            stencil: false
         });
 
         const stlViewer = document.getElementById("stlViewer");
@@ -42,6 +48,13 @@ function displaySTL(geometry) {
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(viewerWidth, viewerHeight);
         renderer.setClearColor(0x000000, 0);
+        renderer.physicallyCorrectLights = true;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1;
+
         document.getElementById("stlViewer").appendChild(renderer.domElement);
 
         controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -78,8 +91,8 @@ function initializeControls() {
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
         controls.screenSpacePanning = true;
-        controls.minDistance = 1;
-        controls.maxDistance = 500;
+        controls.minDistance = 10;
+        controls.maxDistance = 5000;
         controls.maxPolarAngle = Infinity;
         controls.minPolarAngle = -Infinity;
         controls.enableRotate = true;
@@ -90,6 +103,10 @@ function initializeControls() {
         controls.panSpeed = 1.0;
         controls.minAzimuthAngle = -Infinity;
         controls.maxAzimuthAngle = Infinity;
+
+        controls.enableSmooth = true;
+        controls.smoothTime = 0.5;
+
         controls.mouseButtons = {
             LEFT: THREE.MOUSE.ROTATE,
             MIDDLE: THREE.MOUSE.DOLLY,
